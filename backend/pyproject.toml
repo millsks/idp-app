@@ -1,11 +1,15 @@
 # =============================================================================
 # backend/pyproject.toml — Self-contained Python project configuration.
 # All tool configurations are relative to the backend/ directory.
+#
+# Build backend: pixi-build-python
+#   Builds a conda package via `pixi build` — not intended for PyPI.
+#   Dev dependencies are declared in the root pixi.toml, not here.
 # =============================================================================
 
 [build-system]
-requires      = ["hatchling>=1.24.0"]
-build-backend = "hatchling.build"
+requires      = ["pixi-build-python"]
+build-backend = "pixi_build_python"
 
 [project]
 name            = "idp-app"
@@ -28,49 +32,33 @@ classifiers     = [
 ]
 keywords = ["fastapi", "developer-portal", "idp", "celery", "postgresql"]
 
+# Runtime dependencies.
+# Extras notation (e.g. [standard], [redis]) is handled by the explicit conda
+# packages in pixi.toml and by the runtime Docker image.
 dependencies = [
   "fastapi>=0.115.0,<1",
-  "uvicorn[standard]>=0.32.0,<1",
+  "uvicorn>=0.32.0,<1",
   "sqlalchemy>=2.0.0,<3",
   "alembic>=1.14.0,<2",
-  "celery[redis]>=5.4.0,<6",
+  "celery>=5.4.0,<6",
   "redis>=5.2.0,<6",
   "psycopg2-binary>=2.9.0,<3",
   "pydantic>=2.10.0,<3",
   "pydantic-settings>=2.6.0,<3",
   "python-multipart>=0.0.12",
-  "python-jose[cryptography]>=3.3.0,<4",
-  "passlib[bcrypt]>=1.7.4,<2",
+  "python-jose>=3.3.0,<4",
+  "passlib>=1.7.4,<2",
   "httpx>=0.27.0,<1",
   "bcrypt>=4.2.0,<5",
-]
-
-[project.optional-dependencies]
-dev = [
-  "pytest>=8.3.0,<9",
-  "pytest-cov>=6.0.0,<7",
-  "pytest-asyncio>=0.24.0,<1",
-  "mypy>=1.11.0,<2",
-  "ruff>=0.9.0,<1",
-  "bandit>=1.8.0,<2",
-  "types-passlib>=1.7.7,<2",
-  "types-redis>=4.6.0,<5",
-  "types-python-jose>=3.3.4,<4",
+  "cryptography>=43.0.0",
+  "httptools>=0.6.0",
+  "websockets>=13.0",
 ]
 
 [project.urls]
 Homepage      = "https://github.com/millsks/idp-app"
 Issues        = "https://github.com/millsks/idp-app/issues"
 Documentation = "https://github.com/millsks/idp-app"
-
-# ---------------------------------------------------------------------------
-# Hatch — build
-# ---------------------------------------------------------------------------
-[tool.hatch.build.targets.wheel]
-packages = ["src/idp_app"]
-
-[tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/alembic", "alembic.ini", "/README.md", "/pyproject.toml"]
 
 # ---------------------------------------------------------------------------
 # Pytest

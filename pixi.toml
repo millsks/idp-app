@@ -1,10 +1,13 @@
 [workspace]
-name = "idp-app"
-version = "0.1.0"
+name        = "idp-app"
+version     = "0.1.0"
 description = "Integrated Developer Portal — FastAPI backend + React frontend"
-authors = ["Kevin Mills <millsks@gmail.com>"]
-channels = ["conda-forge"]
-platforms = ["linux-64", "linux-aarch64", "osx-arm64", "osx-64"]
+authors     = ["Kevin Mills <millsks@gmail.com>"]
+channels    = ["conda-forge"]
+platforms   = ["linux-64", "linux-aarch64", "osx-arm64", "osx-64"]
+# Enable pixi-build so `pixi build` can produce conda packages from
+# backend/pyproject.toml (pixi-build-python backend).
+preview     = ["pixi-build"]
 
 # ---------------------------------------------------------------------------
 # Workspace-level dependencies (available in every environment)
@@ -17,46 +20,43 @@ pre-commit = ">=4.0.0,<5"
 
 # ---------------------------------------------------------------------------
 # Backend runtime dependencies
-# Extras notation (e.g. [redis], [standard]) is PyPI-only and not applicable
+# Extras notation (e.g. [redis], [standard]) is PyPI-only and does not apply
 # to conda packages — the equivalent packages are listed explicitly below.
-# The full extras remain in backend/pyproject.toml for Docker pip installs.
 # ---------------------------------------------------------------------------
 [feature.backend.dependencies]
 fastapi           = ">=0.115.0,<1"
-uvicorn           = ">=0.32.0,<1"    # uvicorn[standard] extras handled via httptools + websockets below
-httptools         = ">=0.6.0"         # uvicorn standard: faster HTTP parsing
-websockets        = ">=13.0"          # uvicorn standard: WebSocket support
+uvicorn           = ">=0.32.0,<1"   # uvicorn[standard] extras via httptools + websockets
+httptools         = ">=0.6.0"        # faster HTTP parsing for uvicorn
+websockets        = ">=13.0"         # WebSocket support for uvicorn
 sqlalchemy        = ">=2.0.0,<3"
 alembic           = ">=1.14.0,<2"
-celery            = ">=5.4.0,<6"     # celery[redis] extras handled via redis-py below
-redis-py          = ">=5.2.0,<6"     # celery broker & result backend
+celery            = ">=5.4.0,<6"    # celery[redis] extras via redis-py
+redis-py          = ">=5.2.0,<6"    # Celery broker & result backend
 psycopg2          = ">=2.9.0,<3"
 pydantic          = ">=2.10.0,<3"
 pydantic-settings = ">=2.6.0,<3"
 python-multipart  = ">=0.0.12"
-python-jose       = ">=3.3.0,<4"    # python-jose[cryptography] extras handled via cryptography below
-cryptography      = ">=43.0.0"        # required by python-jose for JWT signing
-passlib           = ">=1.7.4,<2"     # passlib[bcrypt] extras handled via bcrypt below
-bcrypt            = ">=4.2.0,<5"      # password hashing backend for passlib
+python-jose       = ">=3.3.0,<4"   # python-jose[cryptography] extras via cryptography
+cryptography      = ">=43.0.0"       # JWT signing for python-jose
+passlib           = ">=1.7.4,<2"    # passlib[bcrypt] extras via bcrypt
+bcrypt            = ">=4.2.0,<5"     # password hashing for passlib
 httpx             = ">=0.27.0,<1"
 
 [feature.backend.pypi-dependencies]
-# Editable install so backend/src is importable during dev.
-# Pixi reads backend/pyproject.toml deps here — extras warn on conda but
-# are satisfied by the conda packages listed above.
+# Editable install so backend/src is importable during development.
+# Uses pixi-build-python (declared in backend/pyproject.toml) as the build backend.
 idp-app = { path = "backend", editable = true }
 
 # ---------------------------------------------------------------------------
 # Backend development / tooling dependencies
 # ---------------------------------------------------------------------------
 [feature.backend-dev.dependencies]
-pytest          = ">=8.3.0,<9"
-pytest-cov      = ">=6.0.0,<7"
-pytest-asyncio  = ">=0.24.0,<1"
-mypy            = ">=1.11.0,<2"
-ruff            = ">=0.9.0,<1"
-bandit          = ">=1.8.0,<2"
-hatch           = ">=1.12.0,<2"
+pytest         = ">=8.3.0,<9"
+pytest-cov     = ">=6.0.0,<7"
+pytest-asyncio = ">=0.24.0,<1"
+mypy           = ">=1.11.0,<2"
+ruff           = ">=0.9.0,<1"
+bandit         = ">=1.8.0,<2"
 
 [feature.backend-dev.pypi-dependencies]
 types-passlib     = ">=1.7.7,<2"
@@ -67,58 +67,59 @@ types-python-jose = ">=3.3.4,<4"
 # Environments
 # ---------------------------------------------------------------------------
 [environments]
-# Default environment includes full backend development toolchain
+# Default environment: full backend development toolchain
 default = { features = ["backend", "backend-dev"], solve-group = "default" }
 backend = { features = ["backend", "backend-dev"], solve-group = "default" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Backend
 # All backend tool tasks run with cwd="backend" so they pick up
-# the tool configurations in backend/pyproject.toml.
+# the tool configurations declared in backend/pyproject.toml.
 # ---------------------------------------------------------------------------
 [tasks]
 
-# --- linting & formatting (ruff reads backend/pyproject.toml) ---
-backend-lint         = { cmd = "ruff check src tests",        cwd = "backend", description = "Lint backend Python code" }
-backend-lint-fix     = { cmd = "ruff check --fix src tests",  cwd = "backend", description = "Lint and auto-fix backend Python code" }
-backend-format       = { cmd = "ruff format src tests",       cwd = "backend", description = "Format backend Python code" }
-backend-format-check = { cmd = "ruff format --check src tests", cwd = "backend", description = "Check backend Python formatting (CI)" }
+# --- linting & formatting ---
+backend-lint         = { cmd = "ruff check src tests",           cwd = "backend", description = "Lint backend Python code" }
+backend-lint-fix     = { cmd = "ruff check --fix src tests",     cwd = "backend", description = "Lint and auto-fix backend Python code" }
+backend-format       = { cmd = "ruff format src tests",          cwd = "backend", description = "Format backend Python code" }
+backend-format-check = { cmd = "ruff format --check src tests",  cwd = "backend", description = "Check backend Python formatting (CI)" }
 
-# --- type checking (mypy reads backend/pyproject.toml) ---
+# --- type checking ---
 backend-typecheck = { cmd = "mypy", cwd = "backend", description = "Type-check backend Python with mypy" }
 
-# --- security (bandit reads backend/pyproject.toml) ---
-backend-security        = { cmd = "bandit -r src -ll -f text",                    cwd = "backend", description = "Security-scan backend Python code" }
+# --- security ---
+backend-security        = { cmd = "bandit -r src -ll -f text",                          cwd = "backend", description = "Security-scan backend Python code" }
 backend-security-report = { cmd = "bandit -r src -ll -f json -o bandit-report.json || true", cwd = "backend", description = "Generate bandit JSON security report" }
 
-# --- testing (pytest reads backend/pyproject.toml) ---
-backend-test          = { cmd = "pytest",                             cwd = "backend", description = "Run backend test suite" }
-backend-test-coverage = { cmd = "pytest --cov-report=html:htmlcov",  cwd = "backend", description = "Run backend tests with HTML coverage" }
+# --- testing ---
+backend-test          = { cmd = "pytest",                            cwd = "backend", description = "Run backend test suite" }
+backend-test-coverage = { cmd = "pytest --cov-report=html:htmlcov", cwd = "backend", description = "Run backend tests with HTML coverage" }
 
-# --- composite ---
+# --- composite check ---
 backend-check = { depends-on = ["backend-lint", "backend-format-check", "backend-typecheck", "backend-test", "backend-security"], description = "Run all backend quality checks" }
 
 # --- runtime ---
 backend-run    = { cmd = "uvicorn idp_app.main:app --reload --host 0.0.0.0 --port 8000", description = "Start backend dev server (hot-reload)" }
 backend-worker = { cmd = "celery -A idp_app.tasks.worker worker --loglevel=info --concurrency=4", description = "Start Celery worker" }
-backend-beat   = { cmd = "celery -A idp_app.tasks.worker beat   --loglevel=info",             description = "Start Celery beat scheduler" }
-backend-flower = { cmd = "celery -A idp_app.tasks.worker flower --port=5555",                 description = "Start Celery Flower monitoring UI" }
+backend-beat   = { cmd = "celery -A idp_app.tasks.worker beat   --loglevel=info",                 description = "Start Celery beat scheduler" }
+backend-flower = { cmd = "celery -A idp_app.tasks.worker flower --port=5555",                      description = "Start Celery Flower monitoring UI" }
 
-# --- database migrations (alembic.ini lives in backend/) ---
-backend-migrate      = { cmd = "alembic upgrade head",               cwd = "backend", description = "Apply all pending Alembic migrations" }
-backend-migrate-down = { cmd = "alembic downgrade -1",               cwd = "backend", description = "Roll back one Alembic migration" }
-backend-migration    = { cmd = "alembic revision --autogenerate",     cwd = "backend", description = "Auto-generate new migration (add -m 'message')" }
-backend-db-history   = { cmd = "alembic history --verbose",           cwd = "backend", description = "Show Alembic migration history" }
-backend-db-current   = { cmd = "alembic current",                     cwd = "backend", description = "Show current Alembic migration state" }
+# --- database migrations ---
+backend-migrate      = { cmd = "alembic upgrade head",            cwd = "backend", description = "Apply all pending Alembic migrations" }
+backend-migrate-down = { cmd = "alembic downgrade -1",            cwd = "backend", description = "Roll back one Alembic migration" }
+backend-migration    = { cmd = "alembic revision --autogenerate", cwd = "backend", description = "Auto-generate new migration (add -m 'message')" }
+backend-db-history   = { cmd = "alembic history --verbose",       cwd = "backend", description = "Show Alembic migration history" }
+backend-db-current   = { cmd = "alembic current",                 cwd = "backend", description = "Show current Alembic migration state" }
 
-# --- build & publish ---
-backend-build         = { cmd = "hatch build -t wheel -t sdist", cwd = "backend", description = "Build Python wheel and sdist" }
-backend-check-package = { cmd = "twine check dist/*",            cwd = "backend", description = "Validate built distribution packages" }
+# --- build (pixi-build-python → conda package) ---
+# Produces a .conda artifact in dist/ that is uploaded to GitHub releases.
+# Requires the pixi-build preview feature (enabled in [workspace] above).
+backend-build = { cmd = "pixi build --manifest-path backend/pyproject.toml --output-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Frontend
-# All frontend tasks delegate to npm scripts; cwd="frontend" ensures the
-# package.json and config files in frontend/ are used.
+# All frontend tasks delegate to npm scripts; cwd="frontend" so configs
+# in frontend/ (package.json, eslint.config.js, etc.) are used automatically.
 # ---------------------------------------------------------------------------
 frontend-install       = { cmd = "npm install",          cwd = "frontend", description = "Install frontend npm dependencies" }
 frontend-install-ci    = { cmd = "npm ci",               cwd = "frontend", description = "Clean install frontend npm deps (CI)" }
@@ -131,10 +132,14 @@ frontend-test          = { cmd = "npm run test",          cwd = "frontend", desc
 frontend-test-watch    = { cmd = "npm run test:watch",    cwd = "frontend", description = "Run frontend tests in watch mode" }
 frontend-test-coverage = { cmd = "npm run test:coverage", cwd = "frontend", description = "Run frontend tests with coverage" }
 frontend-security      = { cmd = "npm run security",      cwd = "frontend", description = "Audit frontend npm deps for vulnerabilities" }
-frontend-build         = { cmd = "npm run build",         cwd = "frontend", description = "Build frontend for production" }
+frontend-build         = { cmd = "npm run build",         cwd = "frontend", description = "Build frontend production bundle (Vite → dist/)" }
 frontend-preview       = { cmd = "npm run preview",       cwd = "frontend", description = "Preview production frontend build locally" }
 frontend-dev           = { cmd = "npm run dev",           cwd = "frontend", description = "Start frontend Vite dev server" }
 frontend-check         = { depends-on = ["frontend-lint", "frontend-format-check", "frontend-typecheck", "frontend-test", "frontend-security"], description = "Run all frontend quality checks" }
+
+# Archive the Vite production bundle for upload to GitHub releases.
+# Creates dist/idp-frontend-<version>.tar.gz from frontend/dist/.
+frontend-archive = { cmd = "mkdir -p dist && tar -czf dist/idp-frontend-$(git describe --tags --always).tar.gz -C frontend dist", description = "Archive built frontend bundle for release upload" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Monorepo-level
@@ -144,32 +149,36 @@ format = { depends-on = ["backend-format", "frontend-format"], description = "Fo
 test   = { depends-on = ["backend-test",   "frontend-test"],   description = "Run all tests (backend + frontend)" }
 check  = { depends-on = ["backend-check",  "frontend-check"],  description = "Run all quality checks (backend + frontend)" }
 
+# Build all release artifacts: backend conda package + frontend bundle archive.
+# Run quality checks first, then build. Output lands in dist/.
+release-artifacts = { depends-on = ["backend-check", "frontend-check", "frontend-build", "backend-build", "frontend-archive"], description = "Build and archive all release artifacts into dist/" }
+
 # ---------------------------------------------------------------------------
-# Tasks — Changelog & releases (cliff.toml at root)
+# Tasks — Changelog & releases
 # ---------------------------------------------------------------------------
-changelog            = { cmd = "git-cliff --output CHANGELOG.md",                      description = "Regenerate full CHANGELOG.md" }
-changelog-unreleased = { cmd = "git-cliff --unreleased --prepend CHANGELOG.md",        description = "Prepend unreleased commits to CHANGELOG.md" }
+changelog            = { cmd = "git-cliff --config cliff.toml --output CHANGELOG.md",           description = "Regenerate full CHANGELOG.md" }
+changelog-unreleased = { cmd = "git-cliff --config cliff.toml --unreleased --prepend CHANGELOG.md", description = "Prepend unreleased commits to CHANGELOG.md" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Docker Compose
 # ---------------------------------------------------------------------------
-docker-build  = { cmd = "docker compose build",                               description = "Build all Docker images" }
-docker-up     = { cmd = "docker compose up -d",                               description = "Start all services (detached)" }
-docker-up-log = { cmd = "docker compose up",                                  description = "Start all services with logs" }
-docker-down   = { cmd = "docker compose down",                                description = "Stop and remove containers" }
-docker-down-v = { cmd = "docker compose down -v",                             description = "Stop containers AND remove volumes" }
-docker-logs   = { cmd = "docker compose logs -f",                             description = "Follow all service logs" }
-docker-ps     = { cmd = "docker compose ps",                                  description = "Show running containers" }
-docker-migrate= { cmd = "docker compose exec backend alembic upgrade head",   description = "Run DB migrations inside Docker" }
-docker-shell  = { cmd = "docker compose exec backend bash",                   description = "Open shell in backend container" }
+docker-build  = { cmd = "docker compose build",                             description = "Build all Docker images" }
+docker-up     = { cmd = "docker compose up -d",                             description = "Start all services (detached)" }
+docker-up-log = { cmd = "docker compose up",                                description = "Start all services with logs" }
+docker-down   = { cmd = "docker compose down",                              description = "Stop and remove containers" }
+docker-down-v = { cmd = "docker compose down -v",                           description = "Stop containers AND remove volumes" }
+docker-logs   = { cmd = "docker compose logs -f",                           description = "Follow all service logs" }
+docker-ps     = { cmd = "docker compose ps",                                description = "Show running containers" }
+docker-migrate= { cmd = "docker compose exec backend alembic upgrade head", description = "Run DB migrations inside Docker" }
+docker-shell  = { cmd = "docker compose exec backend bash",                 description = "Open shell in backend container" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Pre-commit
 # ---------------------------------------------------------------------------
-hooks-install     = { cmd = "pre-commit install --install-hooks",         description = "Install pre-commit hooks" }
-hooks-install-msg = { cmd = "pre-commit install --hook-type commit-msg",  description = "Install commit-msg hook (conventional commits)" }
-hooks-run         = { cmd = "pre-commit run --all-files",                 description = "Run all pre-commit hooks on every file" }
-hooks-update      = { cmd = "pre-commit autoupdate",                      description = "Update pre-commit hook versions to latest" }
+hooks-install     = { cmd = "pre-commit install --install-hooks",        description = "Install pre-commit hooks" }
+hooks-install-msg = { cmd = "pre-commit install --hook-type commit-msg", description = "Install commit-msg hook (conventional commits)" }
+hooks-run         = { cmd = "pre-commit run --all-files",                description = "Run all pre-commit hooks on every file" }
+hooks-update      = { cmd = "pre-commit autoupdate",                     description = "Update pre-commit hook versions to latest" }
 
 # ---------------------------------------------------------------------------
 # Tasks — One-time setup (run after clone)

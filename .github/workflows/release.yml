@@ -33,6 +33,9 @@ jobs:
       pull-requests: write
 
     steps:
+      # -----------------------------------------------------------------------
+      # Auth & checkout
+      # -----------------------------------------------------------------------
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -46,6 +49,9 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
+      # -----------------------------------------------------------------------
+      # Version calculation
+      # -----------------------------------------------------------------------
       - name: Get latest tag
         id: get_tag
         run: |
@@ -99,12 +105,18 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # -----------------------------------------------------------------------
+      # Pixi environment
+      # -----------------------------------------------------------------------
       - name: Set up pixi
         if: steps.should_skip.outputs.skip != 'true'
         uses: prefix-dev/setup-pixi@v0.9.5
         with:
           pixi-version: v0.47.0
 
+      # -----------------------------------------------------------------------
+      # Version validation & tag management
+      # -----------------------------------------------------------------------
       - name: Set release tag
         id: set_release_tag
         if: steps.should_skip.outputs.skip != 'true'
@@ -156,12 +168,22 @@ jobs:
             echo "✅ Release ${VERSION} removed"
           fi
 
-      - name: Run quality checks
+      # -----------------------------------------------------------------------
+      # Quality gate
+      # -----------------------------------------------------------------------
+      - name: Install frontend dependencies
+        if: steps.should_skip.outputs.skip != 'true'
+        run: pixi run frontend-install-ci
+
+      - name: Run backend quality checks
         if: steps.should_skip.outputs.skip != 'true'
         run: |
-          pixi run frontend-install-ci
           pixi run backend-lint
           pixi run backend-typecheck
+
+      - name: Run frontend quality checks
+        if: steps.should_skip.outputs.skip != 'true'
+        run: |
           pixi run frontend-lint
           pixi run frontend-typecheck
 
@@ -171,6 +193,9 @@ jobs:
           pixi run backend-test
           pixi run frontend-test
 
+      # -----------------------------------------------------------------------
+      # Changelog & tag
+      # -----------------------------------------------------------------------
       - name: Create temporary tag for changelog generation
         if: steps.should_skip.outputs.skip != 'true'
         run: |
@@ -199,6 +224,41 @@ jobs:
           git tag -a "v${{ env.NEW_TAG }}" -m "Release v${{ env.NEW_TAG }}"
           git push origin main --tags
 
+      # -----------------------------------------------------------------------
+      # Build release artifacts
+      #
+      # Two artifacts are uploaded to the GitHub release:
+      #   1. Backend conda package  — built by `pixi build` via pixi-build-python
+      #   2. Frontend bundle archive — Vite production build tarball
+      #
+      # No PyPI publishing. No hatch.
+      # -----------------------------------------------------------------------
+      - name: Build backend conda package
+        if: steps.should_skip.outputs.skip != 'true'
+        run: |
+          mkdir -p dist/backend
+          pixi run backend-build
+          echo "✅ Backend conda package built"
+          ls -lh dist/backend/
+
+      - name: Build frontend bundle
+        if: steps.should_skip.outputs.skip != 'true'
+        run: |
+          pixi run frontend-build
+          echo "✅ Frontend bundle built"
+
+      - name: Archive frontend bundle
+        if: steps.should_skip.outputs.skip != 'true'
+        run: |
+          mkdir -p dist
+          ARCHIVE="dist/idp-frontend-${{ env.NEW_TAG }}.tar.gz"
+          tar -czf "${ARCHIVE}" -C frontend dist
+          echo "✅ Frontend archive created: ${ARCHIVE}"
+          ls -lh "${ARCHIVE}"
+
+      # -----------------------------------------------------------------------
+      # Release notes
+      # -----------------------------------------------------------------------
       - name: Generate release notes
         if: steps.should_skip.outputs.skip != 'true'
         id: release_notes
@@ -207,41 +267,58 @@ jobs:
           if [ -f "CHANGELOG.md" ]; then
             CHANGELOG_SECTION=$(awk "/^## \\[${VERSION}\\]/{flag=1; next} /^## \\[/{flag=0} flag" CHANGELOG.md)
             if [ -n "$CHANGELOG_SECTION" ]; then
-              cat << EOF >> "$GITHUB_OUTPUT"
+              cat << 'EOF_MARKER' >> "$GITHUB_OUTPUT"
           notes<<RELEASE_NOTES
-          ## [${VERSION}] - $(date +%Y-%m-%d)
-
-          ${CHANGELOG_SECTION}
+          EOF_MARKER
+              echo "## [${VERSION}] - $(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+              echo "" >> "$GITHUB_OUTPUT"
+              echo "${CHANGELOG_SECTION}" >> "$GITHUB_OUTPUT"
+              cat << 'EOF_MARKER' >> "$GITHUB_OUTPUT"
 
           ---
 
-          📝 **Full changelog**: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
-          RELEASE_NOTES
-          EOF
-            else
-              cat << EOF >> "$GITHUB_OUTPUT"
-          notes<<RELEASE_NOTES
-          Release v${{ env.NEW_TAG }}
+          ## Release Artifacts
 
-          ⚠️ No specific changelog entry found. See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).
+          | Artifact | Description |
+          |---|---|
+          | `idp-frontend-*.tar.gz` | Vite production bundle (serve with any static host or Nginx) |
+          | `idp-app-*.conda` | Backend conda package (install via `pixi` or `conda`) |
+
+          📝 **Full changelog**: [CHANGELOG.md](CHANGELOG_LINK)
+
           RELEASE_NOTES
-          EOF
+          EOF_MARKER
+              # Replace placeholder with real link
+              sed -i "s|CHANGELOG_LINK|https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md|g" "$GITHUB_OUTPUT"
+            else
+              echo "notes=Release v${{ env.NEW_TAG }}" >> "$GITHUB_OUTPUT"
             fi
           fi
 
+      # -----------------------------------------------------------------------
+      # Create GitHub release and upload artifacts
+      # -----------------------------------------------------------------------
       - name: Create GitHub Release
         if: steps.should_skip.outputs.skip != 'true'
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.NEW_TAG }}
-          name: Release v${{ env.NEW_TAG }}
-          body: ${{ steps.release_notes.outputs.notes }}
-          draft: false
+          tag_name:   v${{ env.NEW_TAG }}
+          name:       Release v${{ env.NEW_TAG }}
+          body:       ${{ steps.release_notes.outputs.notes }}
+          draft:      false
           prerelease: ${{ github.event.inputs.prerelease }}
+          # Upload both the conda package and the frontend tarball
+          files: |
+            dist/backend/*.conda
+            dist/backend/*.tar.bz2
+            dist/idp-frontend-${{ env.NEW_TAG }}.tar.gz
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Release summary
         if: steps.should_skip.outputs.skip != 'true'
         run: |
           echo "✅ Release created: ${{ steps.create_release.outputs.url }}"
+          echo ""
+          echo "📦 Artifacts uploaded:"
+          ls -lh dist/backend/ dist/idp-frontend-*.tar.gz 2>/dev/null || true
