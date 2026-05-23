@@ -1,0 +1,116 @@
+name: Repository Maintenance
+
+on:
+  schedule:
+    - cron: "0 2 * * 0"  # Weekly on Sundays at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.5
+        with:
+          pixi-version: v0.47.0
+
+      - name: Update pixi lock file
+        run: pixi update
+
+      - name: Update frontend npm dependencies
+        run: |
+          cd frontend
+          npm update
+          npm audit fix --force || true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has-changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
+          commit-message: "chore(deps): update dependencies"
+          title: "chore(deps): automated dependency updates"
+          body: |
+            ## Automated Dependency Updates
+
+            This PR contains automated updates to:
+            - 📦 Pixi lock file (`pixi.lock`)
+            - 📦 Frontend npm packages (`frontend/package-lock.json`)
+
+            ### Checklist
+            - [ ] Backend tests pass
+            - [ ] Frontend tests pass
+            - [ ] No breaking changes
+
+            *Automated by the Repository Maintenance workflow.*
+          branch: automated/dependency-updates
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            maintenance
+
+  cleanup-artifacts:
+    name: Cleanup Old Workflow Runs
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 10
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.5
+        with:
+          pixi-version: v0.47.0
+
+      - name: Backend security scan (bandit)
+        run: pixi run backend-security-report
+
+      - name: Frontend security audit
+        run: |
+          pixi run frontend-install-ci
+          cd frontend && npm audit --json > npm-audit-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            backend/bandit-report.json
+            frontend/npm-audit-report.json
+          retention-days: 30

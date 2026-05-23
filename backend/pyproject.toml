@@ -1,0 +1,177 @@
+# =============================================================================
+# backend/pyproject.toml — Self-contained Python project configuration.
+# All tool configurations are relative to the backend/ directory.
+# =============================================================================
+
+[build-system]
+requires      = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name            = "idp-app"
+version         = "0.1.0"
+description     = "Integrated Developer Portal — FastAPI backend"
+readme          = "README.md"
+requires-python = ">=3.12"
+license         = { file = "../LICENSE" }
+authors         = [{ name = "Kevin Mills", email = "millsks@gmail.com" }]
+classifiers     = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Developers",
+  "Framework :: FastAPI",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Operating System :: OS Independent",
+]
+keywords = ["fastapi", "developer-portal", "idp", "celery", "postgresql"]
+
+dependencies = [
+  "fastapi>=0.115.0,<1",
+  "uvicorn[standard]>=0.32.0,<1",
+  "sqlalchemy>=2.0.0,<3",
+  "alembic>=1.14.0,<2",
+  "celery[redis]>=5.4.0,<6",
+  "redis>=5.2.0,<6",
+  "psycopg2-binary>=2.9.0,<3",
+  "pydantic>=2.10.0,<3",
+  "pydantic-settings>=2.6.0,<3",
+  "python-multipart>=0.0.12",
+  "python-jose[cryptography]>=3.3.0,<4",
+  "passlib[bcrypt]>=1.7.4,<2",
+  "httpx>=0.27.0,<1",
+  "bcrypt>=4.2.0,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0,<9",
+  "pytest-cov>=6.0.0,<7",
+  "pytest-asyncio>=0.24.0,<1",
+  "mypy>=1.11.0,<2",
+  "ruff>=0.9.0,<1",
+  "bandit>=1.8.0,<2",
+  "types-passlib>=1.7.7,<2",
+  "types-redis>=4.6.0,<5",
+  "types-python-jose>=3.3.4,<4",
+]
+
+[project.urls]
+Homepage      = "https://github.com/millsks/idp-app"
+Issues        = "https://github.com/millsks/idp-app/issues"
+Documentation = "https://github.com/millsks/idp-app"
+
+# ---------------------------------------------------------------------------
+# Hatch — build
+# ---------------------------------------------------------------------------
+[tool.hatch.build.targets.wheel]
+packages = ["src/idp_app"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/alembic", "alembic.ini", "/README.md", "/pyproject.toml"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+pythonpath   = ["src"]
+asyncio_mode = "auto"
+addopts      = """\
+  -ra \
+  --strict-markers \
+  --cov=idp_app \
+  --cov-report=term-missing \
+  --cov-report=xml:coverage.xml \
+  --cov-fail-under=80\
+"""
+
+[tool.coverage.run]
+source = ["idp_app"]
+branch = true
+omit   = ["src/idp_app/migrations/*", "tests/*", "alembic/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — linting & formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length    = 120
+src            = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "S",   # flake8-bandit (security)
+  "C4",  # flake8-comprehensions
+  "T20", # flake8-print (no stray print statements)
+  "RUF", # ruff-specific rules
+]
+ignore = [
+  "S101",  # assert statements OK in tests
+  "S105",  # hard-coded password: bandit covers this more thoroughly
+  "S106",
+  "S311",  # non-crypto random OK for non-security uses
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S106", "T20"]
+
+[tool.ruff.format]
+quote-style               = "double"
+indent-style              = "space"
+skip-magic-trailing-comma = false
+line-ending               = "auto"
+
+# ---------------------------------------------------------------------------
+# MyPy — type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version   = "3.12"
+strict           = true
+warn_unreachable = true
+show_error_codes = true
+pretty           = true
+mypy_path        = "src"
+files            = ["src", "tests"]
+exclude          = ["^alembic/", "^\\.pixi/"]
+
+[[tool.mypy.overrides]]
+module = [
+  "celery.*",
+  "kombu.*",
+  "alembic.*",
+  "passlib.*",
+  "jose.*",
+  "multipart.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Relax strictness in tests to avoid boilerplate annotations
+module                = "tests.*"
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# Bandit — security linting
+# ---------------------------------------------------------------------------
+[tool.bandit]
+targets = ["src"]
+skips   = ["B101"]   # assert_used — covered by ruff S101

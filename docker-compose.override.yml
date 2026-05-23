@@ -1,0 +1,55 @@
+---
+# docker-compose.override.yml — Local development overrides.
+# Automatically merged with docker-compose.yml by `docker compose`.
+#
+# Changes vs production:
+#   - Backend: hot-reload via volume mount + DEBUG=true
+#   - Flower monitoring UI exposed on :5555
+#   - Frontend dev server replaced with Vite (run separately via pixi)
+
+services:
+  backend:
+    build:
+      target: runtime
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+    volumes:
+      # Mount source for hot-reload (uvicorn --reload)
+      - ./backend/src:/app/src:ro
+    command: uvicorn idp_app.main:app --reload --host 0.0.0.0 --port 8000
+
+  celery-worker:
+    environment:
+      CELERY_TASK_ALWAYS_EAGER: "false"
+    volumes:
+      - ./backend/src:/app/src:ro
+
+  celery-beat:
+    volumes:
+      - ./backend/src:/app/src:ro
+
+  # Flower — Celery task monitoring UI (dev only)
+  flower:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    container_name: idp-flower
+    command: celery -A idp_app.tasks.worker flower --port=5555
+    environment:
+      CELERY_BROKER_URL:     redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - tools
+
+  # In development, run the Vite dev server outside Docker (pixi run frontend-dev)
+  # and remove the built frontend container.
+  frontend:
+    profiles:
+      - production

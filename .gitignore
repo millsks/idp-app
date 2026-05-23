@@ -216,3 +216,97 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# =============================================================================
+# Node / React / Frontend
+# =============================================================================
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Test coverage
+frontend/coverage/
+
+# TypeScript build info
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+frontend/.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Vite cache
+.vite/
+
+# npm / yarn / pnpm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.yarn/
+package-lock.json.bak
+
+# Frontend environment files (local overrides)
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Storybook
+frontend/.storybook/
+frontend/storybook-static/
+
+# =============================================================================
+# Docker
+# =============================================================================
+.docker/
+
+# =============================================================================
+# Secrets & local configuration
+# =============================================================================
+.secrets
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+
+# act (local GitHub Actions runner)
+.secrets
+
+# =============================================================================
+# Database / local data
+# =============================================================================
+*.db
+*.sqlite
+postgres-data/
+redis-data/
+
+# Alembic (don't ignore versions, just local artifacts)
+backend/alembic/__pycache__/
+
+# =============================================================================
+# OS
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

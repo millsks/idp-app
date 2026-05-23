@@ -1,0 +1,31 @@
+# .actrc — Configuration for nektos/act (run GitHub Actions locally).
+# Install act: brew install act (macOS) or see https://nektosact.com/installation/
+#
+# Usage examples:
+#   act                        # run the default push event
+#   act pull_request           # simulate a PR
+#   act workflow_dispatch      # run a manual workflow
+#   act -W .github/workflows/ci.yml   # run a specific workflow
+#   act -j backend-quality     # run a specific job
+#   act -n                     # dry-run (list what would run)
+#   act --list                 # list all available workflows/jobs
+#
+# Secrets:
+#   Copy .secrets.example to .secrets and fill in values.
+#   act reads .secrets automatically when present.
+
+# Use the full Ubuntu image for compatibility (smaller images miss many tools)
+-P ubuntu-latest=catthehacker/ubuntu:act-22.04
+
+# macOS and Windows runners are not supported by act — fall back to ubuntu
+-P macos-latest=catthehacker/ubuntu:act-22.04
+-P windows-latest=catthehacker/ubuntu:act-22.04
+
+# Load secrets from .secrets file (never commit this file!)
+--secret-file .secrets
+
+# Load environment variables for act runs
+--env-file .env.act
+
+# Use a local artifact server
+--artifact-server-path /tmp/act-artifacts

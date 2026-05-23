@@ -1,0 +1,26 @@
+# .github/issue-labeler.yml — Labels applied automatically to issues by keywords.
+# Used by github/issue-labeler in the labeler workflow.
+
+bug:
+  - ".*\\bbug\\b.*"
+  - ".*\\berror\\b.*"
+  - ".*\\bfail(ed|ure)?\\b.*"
+  - ".*\\bbroken\\b.*"
+
+enhancement:
+  - ".*\\bfeat(ure)?\\b.*"
+  - ".*\\benhancement\\b.*"
+  - ".*\\bimprovement\\b.*"
+  - ".*\\badd\\b.*"
+
+documentation:
+  - ".*\\bdoc(s|umentation)?\\b.*"
+  - ".*\\breadme\\b.*"
+
+question:
+  - ".*\\b(question|help|how to|how do)\\b.*"
+
+security:
+  - ".*\\bsecurity\\b.*"
+  - ".*\\bvulnerabilit(y|ies)\\b.*"
+  - ".*\\bcve\\b.*"

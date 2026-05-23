@@ -1,0 +1,40 @@
+# .github/labeler.yml — Labels applied automatically to PRs by changed file paths.
+# Used by actions/labeler in the labeler workflow.
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file: ['backend/**']
+
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: ['frontend/**']
+
+docker:
+  - changed-files:
+    - any-glob-to-any-file: ['docker/**', 'docker-compose*.yml']
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file: ['.github/**']
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: ['**.md', 'docs/**']
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'pixi.toml'
+        - 'pixi.lock'
+        - 'backend/pyproject.toml'
+        - 'frontend/package.json'
+        - 'frontend/package-lock.json'
+
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '*.toml'
+        - '*.yml'
+        - '*.yaml'
+        - '*.json'
+        - '.pre-commit-config.yaml'

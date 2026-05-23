@@ -1,0 +1,159 @@
+---
+# docker-compose.yml — Production-style container orchestration for the IDP App.
+#
+# Quick start:
+#   pixi run docker-build   # build images
+#   pixi run docker-up      # start all services (detached)
+#   pixi run docker-migrate # run DB migrations
+#   pixi run docker-logs    # follow logs
+#
+# For local development with hot-reload, use docker-compose.override.yml
+# (automatically merged when running `docker compose` in this directory).
+
+name: idp-app
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — persistent relational data store
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: idp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-idp_db}
+      POSTGRES_USER:     ${POSTGRES_USER:-idp_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-idp_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-idp_user} -d ${POSTGRES_DB:-idp_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis — Celery broker + result backend
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: idp-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # Backend — FastAPI application
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    container_name: idp-backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT:           production
+      DEBUG:                 "false"
+      DATABASE_URL:          postgresql://${POSTGRES_USER:-idp_user}:${POSTGRES_PASSWORD:-idp_password}@postgres:5432/${POSTGRES_DB:-idp_db}
+      REDIS_URL:             redis://redis:6379/0
+      CELERY_BROKER_URL:     redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
+      ALLOWED_ORIGINS:       ${ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker — background task processing
+  # ---------------------------------------------------------------------------
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    container_name: idp-celery-worker
+    restart: unless-stopped
+    command: celery -A idp_app.tasks.worker worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL:          postgresql://${POSTGRES_USER:-idp_user}:${POSTGRES_PASSWORD:-idp_password}@postgres:5432/${POSTGRES_DB:-idp_db}
+      REDIS_URL:             redis://redis:6379/0
+      CELERY_BROKER_URL:     redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat — periodic task scheduler
+  # ---------------------------------------------------------------------------
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    container_name: idp-celery-beat
+    restart: unless-stopped
+    command: celery -A idp_app.tasks.worker beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DATABASE_URL:          postgresql://${POSTGRES_USER:-idp_user}:${POSTGRES_PASSWORD:-idp_password}@postgres:5432/${POSTGRES_DB:-idp_db}
+      REDIS_URL:             redis://redis:6379/0
+      CELERY_BROKER_URL:     redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Frontend — React SPA served via Nginx
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: runtime
+    container_name: idp-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
