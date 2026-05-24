@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import {
   AppBar,
   Box,
+  Button,
   Container,
   Drawer,
   IconButton,
@@ -17,8 +18,11 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
+import LogoutIcon from "@mui/icons-material/Logout";
+import LoginIcon from "@mui/icons-material/Login";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 const DRAWER_WIDTH = 240;
 
@@ -39,6 +43,7 @@ export function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(!isMobile);
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
 
   const handleDrawerToggle = () => {
     setDrawerOpen((prev) => !prev);
@@ -79,9 +84,32 @@ export function Layout() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Integrated Developer Portal
           </Typography>
+
+          {isAuthenticated ? (
+            <Button
+              color="inherit"
+              startIcon={<LogoutIcon />}
+              onClick={() => {
+                logout();
+                void navigate("/");
+              }}
+              aria-label="Log out"
+            >
+              Log Out
+            </Button>
+          ) : (
+            <Button
+              color="inherit"
+              startIcon={<LoginIcon />}
+              onClick={() => void navigate("/login")}
+              aria-label="Sign in"
+            >
+              Sign In
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 

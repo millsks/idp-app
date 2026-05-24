@@ -71,8 +71,12 @@ services:
       REDIS_URL:             redis://redis:6379/0
       CELERY_BROKER_URL:     redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
-      SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
-      ALLOWED_ORIGINS:       ${ALLOWED_ORIGINS:-http://localhost:3000}
+      SECRET_KEY:                  ${SECRET_KEY:-change-me-in-production}
+      ALLOWED_ORIGINS:             ${ALLOWED_ORIGINS:-http://localhost:3000}
+      GITHUB_CLIENT_ID:            ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET:        ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_OAUTH_REDIRECT_URI:   ${GITHUB_OAUTH_REDIRECT_URI:-http://localhost:8000/api/v1/auth/github/callback}
+      FRONTEND_URL:                ${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

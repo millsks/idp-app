@@ -5,6 +5,7 @@
  */
 
 import axios from "axios";
+import { getAuthToken, runLogout } from "../utils/tokenStore";
 
 export const apiClient = axios.create({
   baseURL: "/api/v1",
@@ -13,22 +14,22 @@ export const apiClient = axios.create({
   },
 });
 
-// Attach the JWT access token from localStorage (if present) to every request
+// Attach the JWT access token from AuthContext (via tokenStore) to every request.
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Global error handling — redirect to /login on 401
+// Global error handling — logout and redirect to /login on 401.
 apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("access_token");
+        runLogout();
         globalThis.location.href = "/login";
       }
       throw error; // AxiosError extends Error ✓
