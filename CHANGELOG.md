@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-05-24
 
+### ⚙️ Miscellaneous Tasks
+
+- **release**: Update CHANGELOG.md for v0.1.0
+
 ### ⭐ Features
 
 - Scaffold full IDP App monorepo
@@ -24,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **runtime**: Use python -m for all entry points; fix ALLOWED_ORIGINS parsing
 - Enclose DATABASE_URL in quotes for proper parsing
 - Remove DATABASE_URL environment variable from coverage report step
+- Update backend build commands in pixi.toml for conda package publishing
 
 ### 📚 Documentation
 
