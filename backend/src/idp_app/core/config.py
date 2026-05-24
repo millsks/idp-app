@@ -6,7 +6,7 @@ Settings are loaded from environment variables (or a .env file).
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import PostgresDsn, RedisDsn
+from pydantic import PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,8 +50,31 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------------------
     # Database (PostgreSQL)
+    # Compose the URL from discrete fields so credentials are never
+    # embedded as a default literal.  Set DB_USER / DB_PASSWORD in .env
+    # or as environment variables.  DATABASE_URL can be set directly to
+    # override the assembled value (e.g. in CI or production).
     # ------------------------------------------------------------------
-    DATABASE_URL: PostgresDsn = PostgresDsn("postgresql://idp_user:idp_password@localhost:5432/idp_db")
+    DB_USER: str = "idp_user"
+    DB_PASSWORD: str | None = None  # required when DATABASE_URL is not set directly
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str = "idp_db"
+    DATABASE_URL: PostgresDsn | None = None
+
+    @model_validator(mode="after")
+    def assemble_database_url(self) -> "Settings":
+        """Build DATABASE_URL from components when not provided directly."""
+        if self.DATABASE_URL is None:
+            if not self.DB_PASSWORD:
+                raise ValueError(
+                    "DB_PASSWORD must be set when DATABASE_URL is not provided directly."
+                )
+            self.DATABASE_URL = PostgresDsn(
+                f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            )
+        return self
 
     # ------------------------------------------------------------------
     # Redis

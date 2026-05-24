@@ -1,6 +1,11 @@
 """Shared pytest fixtures for the backend test suite."""
 
+import os
 from collections.abc import AsyncGenerator
+
+# Provide a dummy DB_PASSWORD so Settings can be instantiated in tests.
+# The actual database connection is overridden with an in-memory SQLite engine.
+os.environ.setdefault("DB_PASSWORD", "test-password-not-used")
 
 import pytest
 from fastapi import FastAPI
