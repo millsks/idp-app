@@ -5,14 +5,17 @@ import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
 import { Layout } from "./Layout";
 import { theme } from "../../theme";
+import { AuthProvider } from "../../contexts/AuthContext";
 
 function renderLayout() {
   return render(
-    <ThemeProvider theme={theme}>
-      <MemoryRouter>
-        <Layout />
-      </MemoryRouter>
-    </ThemeProvider>,
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <Layout />
+        </MemoryRouter>
+      </ThemeProvider>
+    </AuthProvider>,
   );
 }
 

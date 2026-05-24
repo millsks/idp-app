@@ -1,6 +1,6 @@
 # Story 2.3: Frontend Auth Flow, Token Storage, Route Protection & Logout
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -26,37 +26,37 @@ so that my session is secure and the app behaves correctly whether I am authenti
 
 ## Tasks / Subtasks
 
-- [ ] Create `frontend/src/contexts/AuthContext.tsx` (AC: 1)
-  - [ ] `AuthState` interface and `AuthContextValue` interface per architecture spec
-  - [ ] `token` stored in `useRef<string | null>` (NOT `useState`)
-  - [ ] `login(exchangeCode)`: calls `POST /api/v1/auth/token/exchange`, on success stores token in ref, fetches user via `GET /api/v1/users/me`, sets `user` state, sets `isAuthenticated=true`
-  - [ ] `logout()`: clears token ref, clears user, sets `isAuthenticated=false`
-  - [ ] Export `getAuthToken()` module-level getter that returns the current ref value (used by Axios interceptor)
-- [ ] Create `frontend/src/hooks/useAuth.ts` (AC: 2)
-  - [ ] Wraps `useContext(AuthContext)` with error guard
-- [ ] Create `frontend/src/pages/AuthCallbackPage.tsx` (AC: 3, 4)
-  - [ ] Reads `exchange_code` from URL search params
-  - [ ] Calls `AuthContext.login(exchangeCode)` on mount
-  - [ ] Handles success (redirect), error (redirect to /login?error=auth_failed), and loading states
-- [ ] Create `frontend/src/components/ProtectedRoute/ProtectedRoute.tsx` (AC: 5, 6)
-  - [ ] Uses `useAuth()` — renders `<Outlet />` if authenticated, `<Navigate>` if not
-  - [ ] Passes current `location.pathname` as `?redirect=` param
-  - [ ] Renders `<LoadingSpinner />` while `isLoading` is true
-  - [ ] Write `ProtectedRoute.test.tsx`
-- [ ] Create `frontend/src/pages/LoginPage.tsx` (AC: 9, 10)
-  - [ ] Two MUI buttons: "Continue with GitHub" → `/api/v1/auth/github`, "Continue with Google" → `/api/v1/auth/google`
-  - [ ] Shows error message if `?error=` param is present in URL
-  - [ ] NO username/password fields
-- [ ] Update `frontend/src/api/client.ts` (AC: 7, 13)
-  - [ ] Import `getAuthToken` from `AuthContext`
-  - [ ] Request interceptor: `config.headers.Authorization = Bearer ${getAuthToken()}`
-  - [ ] 401 response interceptor: call `logout()` from `AuthContext` + redirect to `/login`
-- [ ] Update `frontend/src/App.tsx` (AC: 12)
-  - [ ] Wrap app in `<AuthContext.Provider>`
-  - [ ] Add routes: `/login` → `<LoginPage>`, `/auth/callback` → `<AuthCallbackPage>`
-  - [ ] Wrap `/library` and `/profile` routes in `<ProtectedRoute>`
-- [ ] Create `frontend/src/api/auth.ts` — API functions for auth endpoints
-- [ ] Write tests: `AuthCallbackPage.test.tsx`, `LoginPage.test.tsx`, `useAuth.test.ts`
+- [x] Create `frontend/src/contexts/AuthContext.tsx` (AC: 1)
+  - [x] `AuthState` interface and `AuthContextValue` interface per architecture spec
+  - [x] `token` stored in `useRef<string | null>` (NOT `useState`)
+  - [x] `login(exchangeCode)`: calls `POST /api/v1/auth/token/exchange`, on success stores token in ref, fetches user via `GET /api/v1/users/me`, sets `user` state, sets `isAuthenticated=true`
+  - [x] `logout()`: clears token ref, clears user, sets `isAuthenticated=false`
+  - [x] Token getter lives in `frontend/src/utils/tokenStore.ts` (avoids circular import with `client.ts → AuthContext → auth.ts → client.ts`)
+- [x] Create `frontend/src/hooks/useAuth.ts` (AC: 2)
+  - [x] Wraps `useContext(AuthContext)` with error guard
+- [x] Create `frontend/src/pages/AuthCallbackPage.tsx` (AC: 3, 4)
+  - [x] Reads `exchange_code` from URL search params
+  - [x] Calls `AuthContext.login(exchangeCode)` on mount
+  - [x] Handles success (redirect), error (redirect to /login?error=auth_failed), and loading states
+- [x] Create `frontend/src/components/ProtectedRoute/ProtectedRoute.tsx` (AC: 5, 6)
+  - [x] Uses `useAuth()` — renders `<Outlet />` if authenticated, `<Navigate>` if not
+  - [x] Passes current `location.pathname` as `?redirect=` param
+  - [x] Renders `<CircularProgress />` while `isLoading` is true
+  - [x] Write `ProtectedRoute.test.tsx`
+- [x] Create `frontend/src/pages/LoginPage.tsx` (AC: 9, 10)
+  - [x] Two MUI buttons: "Continue with GitHub" → `/api/v1/auth/github`, "Continue with Google" → `/api/v1/auth/google` (Google disabled, coming soon)
+  - [x] Shows error message if `?error=` param is present in URL
+  - [x] NO username/password fields
+- [x] Update `frontend/src/api/client.ts` (AC: 7, 13)
+  - [x] Request interceptor reads token via `getAuthToken()` from `tokenStore.ts`
+  - [x] 401 response interceptor: calls `runLogout()` from `tokenStore.ts` + redirect to `/login`
+- [x] Update `frontend/src/App.tsx` (AC: 12)
+  - [x] Wrap app in `<AuthProvider>`
+  - [x] Add routes: `/login` → `<LoginPage>`, `/auth/callback` → `<AuthCallbackPage>`
+  - [x] Wrap `/library` and `/profile` routes in `<ProtectedRoute>` (placeholder content until Stories 3.x/4.x)
+- [x] Create `frontend/src/api/auth.ts` — API functions for auth endpoints
+- [x] Write tests: `AuthCallbackPage.test.tsx`, `LoginPage.test.tsx`, `useAuth.test.ts`
+- [x] Update `frontend/src/components/Layout/Layout.tsx` (AC: 11) — auth-conditional Sign In / Log Out button in AppBar
 
 ## Dev Notes
 
@@ -90,8 +90,40 @@ so that my session is secure and the app behaves correctly whether I am authenti
 
 ### Agent Model Used
 
+Claude Sonnet 4.6 (Claude Code)
+
 ### Debug Log References
+
+- `AuthContext.tsx` must not export both a component and a hook in the same file — the `react-refresh/only-export-components` ESLint rule (max-warnings=0) rejects it. Moved the `useContext` call into `hooks/useAuth.ts`; `AuthContext.tsx` exports only `AuthProvider` and the bare `AuthContext` object.
+- Circular import `client.ts → AuthContext.tsx → auth.ts → client.ts` avoided by introducing `frontend/src/utils/tokenStore.ts` as a dependency-free shared store for the token getter and logout callback. `client.ts` and `AuthContext.tsx` both import from `tokenStore.ts`; neither imports from the other.
+- `docker compose restart` does **not** re-read `.env` — it bounces the existing container in-place. `docker compose up -d <service>` recreates the container and picks up new env var values. Discovered when `FRONTEND_URL` was updated from `5173` to `3000` but the backend kept redirecting to `5173` until `up -d` was run.
+- `vi.mock` factory return types inferred as `any` by `@typescript-eslint/no-unsafe-return` — fixed by annotating the mock factory's return type explicitly (`: MockAuthState`).
 
 ### Completion Notes List
 
+- All 13 ACs implemented and verified end-to-end (GitHub OAuth login → token exchange → AppBar logout → re-login without re-auth).
+- `frontend/src/utils/tokenStore.ts` introduced as an unplanned but necessary module to break the circular import between `client.ts` and `AuthContext.tsx`.
+- "Continue with Google" button renders as disabled with "coming soon" caption — Story 2.2 (Google OAuth backend) is not yet implemented.
+- `/library` and `/profile` protected routes render placeholder `<div>` content — full implementations deferred to Stories 4.x and 3.1 respectively.
+- `GET /api/v1/users/me` call in `login()` gracefully handles 404/error (returns `null`) since Story 3.1 is not yet implemented.
+- 36 frontend tests pass, ESLint clean, TypeScript clean.
+
 ### File List
+
+- `frontend/src/utils/tokenStore.ts` — created: module-level token + logout store (no circular deps)
+- `frontend/src/api/auth.ts` — created: `exchangeToken`, `fetchCurrentUser`, `callLogout` API functions
+- `frontend/src/contexts/AuthContext.tsx` — created: `AuthProvider`, `AuthContext`, `AuthContextValue` type
+- `frontend/src/hooks/useAuth.ts` — created: `useAuth()` hook with error guard
+- `frontend/src/pages/LoginPage.tsx` — created: GitHub + Google (disabled) login buttons, error display
+- `frontend/src/pages/AuthCallbackPage.tsx` — created: exchange code handler, loading state, redirect logic
+- `frontend/src/components/ProtectedRoute/ProtectedRoute.tsx` — created: auth gate with spinner + redirect
+- `frontend/src/components/ProtectedRoute/ProtectedRoute.test.tsx` — created
+- `frontend/src/pages/LoginPage.test.tsx` — created
+- `frontend/src/pages/AuthCallbackPage.test.tsx` — created
+- `frontend/src/hooks/useAuth.test.ts` — created
+- `frontend/src/api/client.ts` — updated: replaced `localStorage` with `tokenStore.ts` getters
+- `frontend/src/App.tsx` — updated: `AuthProvider` wrapper, `/login`, `/auth/callback`, protected routes
+- `frontend/src/components/Layout/Layout.tsx` — updated: auth-conditional Sign In / Log Out in AppBar
+- `frontend/src/components/Layout/Layout.test.tsx` — updated: added `AuthProvider` to render wrapper
+- `docker-compose.yml` — updated: added `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_OAUTH_REDIRECT_URI`, `FRONTEND_URL` to backend `environment:` block
+- `.env` — created: local dev credentials (not committed)

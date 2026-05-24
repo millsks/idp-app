@@ -1,16 +1,32 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
+import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { HomePage } from "./pages/HomePage";
+import { LoginPage } from "./pages/LoginPage";
 
 function App() {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
-        {/* Add more routes here as the application grows */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          {/* Public routes */}
+          <Route index element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Protected routes (placeholder pages until Stories 3.x & 4.x) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/library" element={<div>Library — coming in Story 4.x</div>} />
+            <Route path="/profile" element={<div>Profile — coming in Story 3.1</div>} />
+          </Route>
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </AuthProvider>
   );
 }
 
