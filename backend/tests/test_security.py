@@ -1,13 +1,14 @@
 """Tests for password hashing and JWT utilities."""
 
 import pytest
+from jose import JWTError
+
 from idp_app.core.security import (
     create_access_token,
     decode_access_token,
     hash_password,
     verify_password,
 )
-from jose import JWTError
 
 
 class TestPasswordHashing:
