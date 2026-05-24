@@ -28,11 +28,15 @@ function renderApp(initialPath = "/") {
 describe("App", () => {
   it("renders the home page by default", () => {
     renderApp("/");
-    expect(screen.getByText(/Welcome to the Developer Portal/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "The Integrated Developer Portal",
+    );
   });
 
   it("redirects unknown paths to home", () => {
     renderApp("/this-route-does-not-exist");
-    expect(screen.getByText(/Welcome to the Developer Portal/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "The Integrated Developer Portal",
+    );
   });
 });
