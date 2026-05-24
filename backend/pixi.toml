@@ -12,16 +12,15 @@
 # to build the Python wheel, then wraps it into a conda package (.conda).
 #
 # Usage (invoked by the root `pixi run backend-build` task):
-#   pixi build --manifest-path backend/pixi.toml --output-dir dist/backend
+#   pixi publish --path backend/pixi.toml --target-dir dist/backend
 # =============================================================================
 
 [package]
 name    = "idp-app"
 version = "0.1.0"
 
-[package.build-system]
-name    = "pixi-build-python"
-version = ">=0.1.0"
+[package.build]
+backend = { name = "pixi-build-python", version = ">=0.1.0" }
 
 # ---------------------------------------------------------------------------
 # Host dependencies — available during the build step only

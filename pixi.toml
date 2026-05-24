@@ -124,7 +124,7 @@ backend-db-current   = { cmd = "alembic current",                 cwd = "backend
 #                         pixi-build-python calls hatchling internally)
 # backend-build        → both artifacts; used by release-artifacts
 backend-build-wheel = { cmd = "python -m build --wheel --outdir ../dist/backend", cwd = "backend", description = "Build backend Python wheel via hatchling" }
-backend-build-conda = { cmd = "pixi build --manifest-path backend/pixi.toml --output-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
+backend-build-conda = { cmd = "pixi publish --path backend/pixi.toml --target-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
 backend-build       = { depends-on = ["backend-build-wheel", "backend-build-conda"], description = "Build all backend artifacts (wheel + conda package)" }
 
 # ---------------------------------------------------------------------------
