@@ -112,7 +112,7 @@ jobs:
         if: steps.should_skip.outputs.skip != 'true'
         uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          pixi-version: v0.47.0
+          pixi-version: v0.69.0
 
       # -----------------------------------------------------------------------
       # Version validation & tag management

@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: pixi-installer — resolve & install all dependencies via pixi
 # ---------------------------------------------------------------------------
-FROM ghcr.io/prefix-dev/pixi:0.47.0 AS pixi-installer
+FROM ghcr.io/prefix-dev/pixi:0.69.0 AS pixi-installer
 
 WORKDIR /app
 

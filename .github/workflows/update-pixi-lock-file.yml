@@ -20,7 +20,7 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          pixi-version: v0.47.0
+          pixi-version: v0.69.0
           run-install: false
 
       - name: Update lock file
