@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     REDIS_URL: RedisDsn = RedisDsn("redis://localhost:6379/0")
 
     # ------------------------------------------------------------------
+    # OAuth2 — GitHub
+    # ------------------------------------------------------------------
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    GITHUB_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/github/callback"
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # ------------------------------------------------------------------
     # Celery
     # ------------------------------------------------------------------
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
