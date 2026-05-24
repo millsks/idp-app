@@ -8,6 +8,7 @@ swap in an aiosqlite engine via dependency_overrides without side-effects).
 import functools
 from collections.abc import AsyncGenerator
 
+import redis.asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -53,3 +54,24 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+async def get_redis() -> AsyncGenerator[aioredis.Redis, None]:  # type: ignore[type-arg]
+    """FastAPI dependency that provides a shared async Redis client.
+
+    The underlying ConnectionPool is created once and cached for the lifetime
+    of the process (same pattern as the SQLAlchemy engine).  The client is
+    *not* closed after each request — closing it would destroy the shared pool.
+    """
+    yield _get_redis_client()
+
+
+@functools.lru_cache(maxsize=1)
+def _get_redis_client() -> aioredis.Redis:  # type: ignore[type-arg]
+    """Build and cache a single async Redis client (with connection pool)."""
+    settings = get_settings()
+    return aioredis.from_url(
+        str(settings.REDIS_URL),
+        encoding="utf-8",
+        decode_responses=True,
+    )

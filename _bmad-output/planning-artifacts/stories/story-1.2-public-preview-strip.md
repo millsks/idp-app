@@ -1,6 +1,6 @@
 # Story 1.2: Public Preview Strip
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -21,30 +21,30 @@ so that I can evaluate the library's content quality before committing to sign u
 
 ## Tasks / Subtasks
 
-- [ ] Backend: Add `GET /api/v1/library/items/public` endpoint (AC: 6, 7)
-  - [ ] Create `backend/src/idp_app/api/v1/routes/library.py` with the public endpoint
-  - [ ] Endpoint reads from Redis key `library:items:public` (Set of slugs) then fetches each `library:item:{slug}` Hash
-  - [ ] Returns `LibraryItemList` schema (standard envelope: `{items, total, page, size, pages}`)
-  - [ ] No auth dependency — endpoint is fully public
-  - [ ] Returns empty list (not 500) when Redis has no `library:items:public` key
-  - [ ] Register router in `backend/src/idp_app/api/v1/router.py`
-- [ ] Backend: Add `LibraryItem` and `LibraryItemList` Pydantic schemas (AC: 6)
-  - [ ] Create `backend/src/idp_app/schemas/library.py`
-  - [ ] `LibraryItem`: `slug`, `title`, `description`, `content_type`, `tags`, `is_public`, `target_ai`, `author`, `last_updated` (no `content` field in list schema)
-  - [ ] `LibraryItemList`: standard envelope `{items: list[LibraryItem], total, page, size, pages}`
-- [ ] Frontend: Create `PublicPreviewStrip` component (AC: 1, 2, 3, 5, 8)
-  - [ ] Create `frontend/src/components/LandingPreview/PublicPreviewStrip.tsx`
-  - [ ] Call `GET /api/v1/library/items/public` via `apiClient` (no auth header needed)
-  - [ ] Render up to 6 item cards using MUI `Card` components
-  - [ ] Each card: title, description, `content_type` chip, tags chips
-  - [ ] Handle empty/error state gracefully (hidden/placeholder)
-- [ ] Frontend: Wire preview item click behaviour (AC: 4)
-  - [ ] Clicking a card opens a modal or inline teaser showing title + description only
-  - [ ] "Sign in to view full content" CTA button links to `/login`
-  - [ ] Full Markdown content is never fetched or rendered for unauthenticated users
-- [ ] Frontend: Add `PublicPreviewStrip` to `HomePage.tsx` (AC: 1)
-- [ ] Backend: Write tests for public library endpoint in `tests/test_library.py`
-- [ ] Frontend: Write tests for `PublicPreviewStrip.test.tsx`
+- [x] Backend: Add `GET /api/v1/library/items/public` endpoint (AC: 6, 7)
+  - [x] Create `backend/src/idp_app/api/v1/routes/library.py` with the public endpoint
+  - [x] Endpoint reads from Redis key `library:items:public` (Set of slugs) then fetches each `library:item:{slug}` Hash
+  - [x] Returns `LibraryItemList` schema (standard envelope: `{items, total, page, size, pages}`)
+  - [x] No auth dependency — endpoint is fully public
+  - [x] Returns empty list (not 500) when Redis has no `library:items:public` key
+  - [x] Register router in `backend/src/idp_app/api/v1/router.py`
+- [x] Backend: Add `LibraryItem` and `LibraryItemList` Pydantic schemas (AC: 6)
+  - [x] Create `backend/src/idp_app/schemas/library.py`
+  - [x] `LibraryItem`: `slug`, `title`, `description`, `content_type`, `tags`, `is_public`, `target_ai`, `author`, `last_updated` (no `content` field in list schema)
+  - [x] `LibraryItemList`: standard envelope `{items: list[LibraryItem], total, page, size, pages}`
+- [x] Frontend: Create `PublicPreviewStrip` component (AC: 1, 2, 3, 5, 8)
+  - [x] Create `frontend/src/components/LandingPreview/PublicPreviewStrip.tsx`
+  - [x] Call `GET /api/v1/library/items/public` via `apiClient` (no auth header needed)
+  - [x] Render up to 6 item cards using MUI `Card` components
+  - [x] Each card: title, description, `content_type` chip, tags chips
+  - [x] Handle empty/error state gracefully (hidden/placeholder)
+- [x] Frontend: Wire preview item click behaviour (AC: 4)
+  - [x] Clicking a card opens a modal or inline teaser showing title + description only
+  - [x] "Sign in to view full content" CTA button links to `/login`
+  - [x] Full Markdown content is never fetched or rendered for unauthenticated users
+- [x] Frontend: Add `PublicPreviewStrip` to `HomePage.tsx` (AC: 1)
+- [x] Backend: Write tests for public library endpoint in `tests/test_library.py`
+- [x] Frontend: Write tests for `PublicPreviewStrip.test.tsx`
 
 ## Dev Notes
 
@@ -78,8 +78,34 @@ so that I can evaluate the library's content quality before committing to sign u
 
 ### Agent Model Used
 
+Claude Sonnet 4.6
+
 ### Debug Log References
+
+- Fixed Vitest hoisting issue: `const mockApiGet = vi.hoisted(() => vi.fn())` required because `vi.mock` is hoisted before `const` declarations.
+- Fixed ESLint `@typescript-eslint/no-confusing-void-expression` in component — arrow shorthand callbacks returning void need explicit braces.
+- Fixed ESLint `@typescript-eslint/restrict-template-expressions` — numeric loop index in template literal requires `String(i)`.
+- Removed unnecessary `?.` optional chain on `LibraryItem[]` (non-nullable typed array field).
 
 ### Completion Notes List
 
+- Added `get_redis()` FastAPI dependency to `backend/src/idp_app/core/database.py` using `redis.asyncio` (already in pyproject.toml dependencies). Returns an async Redis client yielded and closed per request.
+- Created `LibraryItem` and `LibraryItemList` Pydantic v2 schemas in `backend/src/idp_app/schemas/library.py` — `content` field intentionally absent from list schema.
+- Created `GET /api/v1/library/items/public` endpoint in `backend/src/idp_app/api/v1/routes/library.py`. Reads Redis Set `library:items:public` for slugs, then fetches each `library:item:{slug}` Hash. Filters items where `is_public=true`. Handles Redis errors gracefully (returns empty list, logs exception).
+- Tags field supports both JSON array and CSV fallback parsing for robustness.
+- Registered library router in `backend/src/idp_app/api/v1/router.py`.
+- Created `PublicPreviewStrip` React component using TanStack Query, MUI Card/Chip/Dialog. Renders up to 6 items. Empty/error state renders `null` (hidden). Clicking a card opens a teaser MUI Dialog showing title + description + "Sign in to view full content" CTA linking to `/login`. Full content is never fetched or rendered.
+- Added `<PublicPreviewStrip />` to `HomePage.tsx`.
+- Backend: 35 tests pass, 82.52% coverage (threshold: 80%). Frontend: 12 tests pass.
+- All linters pass: ruff (Python), ESLint (TypeScript), all zero warnings.
+
 ### File List
+
+- `backend/src/idp_app/core/database.py` — modified (added `get_redis()`)
+- `backend/src/idp_app/schemas/library.py` — created
+- `backend/src/idp_app/api/v1/routes/library.py` — created
+- `backend/src/idp_app/api/v1/router.py` — modified (registered library router)
+- `backend/tests/test_library.py` — created
+- `frontend/src/components/LandingPreview/PublicPreviewStrip.tsx` — created
+- `frontend/src/components/LandingPreview/PublicPreviewStrip.test.tsx` — created
+- `frontend/src/pages/HomePage.tsx` — modified (added PublicPreviewStrip)

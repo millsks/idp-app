@@ -2,6 +2,7 @@ import { Box, Card, CardContent, Grid2, Typography } from "@mui/material";
 import DeveloperModeIcon from "@mui/icons-material/DeveloperMode";
 import StorageIcon from "@mui/icons-material/Storage";
 import SpeedIcon from "@mui/icons-material/Speed";
+import { PublicPreviewStrip } from "../components/LandingPreview/PublicPreviewStrip";
 
 interface FeatureCard {
   icon: React.ReactElement;
@@ -54,6 +55,8 @@ export function HomePage() {
           </Grid2>
         ))}
       </Grid2>
+
+      <PublicPreviewStrip />
     </Box>
   );
 }
