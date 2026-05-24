@@ -97,7 +97,7 @@ services:
       target: runtime
     container_name: idp-celery-worker
     restart: unless-stopped
-    command: celery -A idp_app.tasks.worker worker --loglevel=info --concurrency=4
+    command: python -m celery -A idp_app.tasks.worker worker --loglevel=info --concurrency=4
     environment:
       DATABASE_URL:          postgresql://${POSTGRES_USER:-idp_user}:${POSTGRES_PASSWORD:-idp_password}@postgres:5432/${POSTGRES_DB:-idp_db}
       REDIS_URL:             redis://redis:6379/0
@@ -120,7 +120,7 @@ services:
       target: runtime
     container_name: idp-celery-beat
     restart: unless-stopped
-    command: celery -A idp_app.tasks.worker beat --loglevel=info
+    command: python -m celery -A idp_app.tasks.worker beat --loglevel=info --schedule /tmp/celerybeat-schedule
     environment:
       DATABASE_URL:          postgresql://${POSTGRES_USER:-idp_user}:${POSTGRES_PASSWORD:-idp_password}@postgres:5432/${POSTGRES_DB:-idp_db}
       REDIS_URL:             redis://redis:6379/0

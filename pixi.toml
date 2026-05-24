@@ -180,7 +180,7 @@ docker-down   = { cmd = "docker compose down",                              desc
 docker-down-v = { cmd = "docker compose down -v",                           description = "Stop containers AND remove volumes" }
 docker-logs   = { cmd = "docker compose logs -f",                           description = "Follow all service logs" }
 docker-ps     = { cmd = "docker compose ps",                                description = "Show running containers" }
-docker-migrate= { cmd = "docker compose exec backend alembic upgrade head", description = "Run DB migrations inside Docker" }
+docker-migrate= { cmd = "docker compose exec -w /app backend python -m alembic upgrade head", description = "Run DB migrations inside Docker" }
 docker-shell  = { cmd = "docker compose exec backend bash",                 description = "Open shell in backend container" }
 
 # ---------------------------------------------------------------------------

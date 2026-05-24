@@ -4,9 +4,9 @@ Settings are loaded from environment variables (or a .env file).
 """
 
 from functools import lru_cache
-from typing import Annotated, Any
+from typing import Annotated
 
-from pydantic import AnyHttpUrl, PostgresDsn, RedisDsn, field_validator
+from pydantic import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,15 +30,15 @@ class Settings(BaseSettings):
 
     # API
     API_V1_PREFIX: str = "/api/v1"
-    ALLOWED_ORIGINS: list[AnyHttpUrl] = []
+    # Comma-separated origins, e.g. "http://localhost:3000,https://app.example.com".
+    # Stored as a plain string so pydantic-settings passes the env var verbatim
+    # (complex types like list[str] trigger a JSON-decode attempt that fails for
+    # plain URL strings).  parse_allowed_origins() returns the split list.
+    ALLOWED_ORIGINS: str = ""
 
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, value: Any) -> list[str] | str:
-        """Accept a comma-separated string or list."""
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",")]
-        return value  # type: ignore[no-any-return]
+    def parse_allowed_origins(self) -> list[str]:
+        """Return ALLOWED_ORIGINS split on commas, with blanks filtered out."""
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
     # ------------------------------------------------------------------
     # Security

@@ -53,6 +53,11 @@ COPY --from=pixi-installer /app/.pixi/envs/default /opt/idp-env
 # Copy application source (not installed as a package — imported via PYTHONPATH)
 COPY backend/src /app/src
 
+# Copy Alembic migration tooling so `python -m alembic upgrade head` works
+# inside the container (used by the docker-migrate task and CI/CD pipelines).
+COPY backend/alembic     /app/alembic
+COPY backend/alembic.ini /app/alembic.ini
+
 # Environment
 ENV PATH="/opt/idp-env/bin:$PATH" \
     PYTHONPATH="/app/src" \
@@ -66,5 +71,9 @@ USER appuser
 
 EXPOSE 8000
 
-# Uvicorn binary is on PATH from /opt/idp-env/bin
-CMD ["uvicorn", "idp_app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Use "python -m uvicorn" rather than the uvicorn wrapper script.
+# Conda entry-point scripts have hardcoded shebang paths (the builder's
+# /app/.pixi/envs/default/…) that break after the env is relocated to
+# /opt/idp-env in the runtime stage.  The Python binary itself is a real
+# ELF binary whose path is stable, so invoking via -m avoids that issue.
+CMD ["python", "-m", "uvicorn", "idp_app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

@@ -17,7 +17,7 @@ services:
     volumes:
       # Mount source for hot-reload (uvicorn --reload)
       - ./backend/src:/app/src:ro
-    command: uvicorn idp_app.main:app --reload --host 0.0.0.0 --port 8000
+    command: python -m uvicorn idp_app.main:app --reload --host 0.0.0.0 --port 8000
 
   celery-worker:
     environment:
@@ -36,7 +36,7 @@ services:
       dockerfile: docker/backend/Dockerfile
       target: runtime
     container_name: idp-flower
-    command: celery -A idp_app.tasks.worker flower --port=5555
+    command: python -m celery -A idp_app.tasks.worker flower --port=5555
     environment:
       CELERY_BROKER_URL:     redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
