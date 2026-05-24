@@ -1,18 +1,31 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { HomePage } from "./HomePage";
 import { theme } from "../theme";
 
+// Prevent PublicPreviewStrip from making real network calls in these tests.
+vi.mock("../api/client", () => ({
+  apiClient: {
+    get: vi.fn().mockResolvedValue({ data: { items: [], total: 0, page: 1, size: 0, pages: 0 } }),
+  },
+}));
+
 function renderHomePage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter>
-      <ThemeProvider theme={theme}>
-        <HomePage />
-      </ThemeProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <HomePage />
+        </ThemeProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
