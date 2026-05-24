@@ -17,6 +17,10 @@ WORKDIR /app
 # Copy pixi manifests first for better layer caching
 COPY pixi.toml pixi.lock ./
 
+# LICENSE is referenced as "../LICENSE" in backend/pyproject.toml (relative to
+# the backend/ dir), so it must be present at /app/LICENSE inside the builder.
+COPY LICENSE ./
+
 # Copy backend package so pixi can perform the editable install
 COPY backend/pyproject.toml backend/
 COPY backend/src             backend/src
