@@ -48,7 +48,7 @@ app.autodiscover_tasks(["idp_app.tasks"])
 # ---------------------------------------------------------------------------
 
 
-@app.task(bind=True, name="idp_app.tasks.send_welcome_email")  # type: ignore[misc]
+@app.task(bind=True, name="idp_app.tasks.send_welcome_email")  # type: ignore[untyped-decorator]
 def send_welcome_email(self: Celery, user_id: int, email: str) -> dict[str, str]:
     """Send a welcome email to a newly registered user (stub)."""
     logger.info("Sending welcome email to %s (user_id=%d)", email, user_id)
@@ -56,7 +56,7 @@ def send_welcome_email(self: Celery, user_id: int, email: str) -> dict[str, str]
     return {"status": "queued", "user_id": str(user_id), "email": email}
 
 
-@app.task(bind=True, name="idp_app.tasks.cleanup_expired_tokens")  # type: ignore[misc]
+@app.task(bind=True, name="idp_app.tasks.cleanup_expired_tokens")  # type: ignore[untyped-decorator]
 def cleanup_expired_tokens(self: Celery) -> dict[str, int]:
     """Periodic task: remove expired JWT refresh tokens from the database."""
     logger.info("Cleaning up expired tokens…")

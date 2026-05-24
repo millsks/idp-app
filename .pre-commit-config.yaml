@@ -73,18 +73,23 @@ repos:
 
   # MyPy: type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.20.2
     hooks:
       - id: mypy
         name: mypy — backend
         args: [--config-file, backend/pyproject.toml]
         files: ^backend/src/
+        pass_filenames: false
         additional_dependencies:
-          - fastapi>=0.115.0
-          - pydantic>=2.10.0
-          - pydantic-settings>=2.6.0
-          - sqlalchemy>=2.0.0
-          - celery>=5.0.0
+          - fastapi
+          - sqlalchemy[mypy]
+          - pydantic
+          - pydantic-settings
+          - python-jose
+          - passlib
+          - httpx
+          - pytest
+          - pytest-asyncio
           - types-passlib
           - types-redis
           - types-python-jose

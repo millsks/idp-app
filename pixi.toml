@@ -18,6 +18,7 @@ python     = ">=3.12,<3.14"
 nodejs     = ">=24,<25"
 git-cliff  = ">=2.8.0,<3"
 pre-commit = ">=4.0.0,<5"
+pre-commit-hooks = ">=5.0.0,<6"
 
 # ---------------------------------------------------------------------------
 # Backend runtime dependencies
@@ -91,7 +92,7 @@ backend-format       = { cmd = "ruff format src tests",          cwd = "backend"
 backend-format-check = { cmd = "ruff format --check src tests",  cwd = "backend", description = "Check backend Python formatting (CI)" }
 
 # --- type checking ---
-backend-typecheck = { cmd = "mypy", cwd = "backend", description = "Type-check backend Python with mypy" }
+backend-typecheck = { cmd = "mypy --config-file backend/pyproject.toml", description = "Type-check backend Python with mypy" }
 
 # --- security ---
 backend-security        = { cmd = "bandit -r src -ll -f screen",                             cwd = "backend", description = "Security-scan backend Python code" }
@@ -195,3 +196,6 @@ hooks-update      = { cmd = "pre-commit autoupdate",                     descrip
 # Tasks — One-time setup (run after clone)
 # ---------------------------------------------------------------------------
 setup = { depends-on = ["hooks-install", "hooks-install-msg", "frontend-install"], description = "One-time project setup: hooks + frontend deps" }
+
+[pypi-dependencies]
+conventional-pre-commit = ">=4.4.0, <5"
