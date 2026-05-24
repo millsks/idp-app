@@ -1,6 +1,6 @@
 # Story 1.2: Public Preview Strip
 
-Status: review
+Status: done
 
 ## Story
 
