@@ -2,14 +2,23 @@
 # backend/pyproject.toml — Self-contained Python project configuration.
 # All tool configurations are relative to the backend/ directory.
 #
-# Build backend: pixi-build-python
-#   Builds a conda package via `pixi build` — not intended for PyPI.
-#   Dev dependencies are declared in the root pixi.toml, not here.
+# Build backend: hatchling
+#   Used by `pip install .` (Docker multi-stage builds) and by pixi-build-python
+#   internally when wrapping the Python wheel into a conda package.
+#   The pixi-build-python declaration lives in backend/pixi.toml.
+#
+# Dev dependencies are declared in the root pixi.toml, not here.
 # =============================================================================
 
 [build-system]
-requires      = ["pixi-build-python"]
-build-backend = "pixi_build_python"
+requires      = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/idp_app"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/alembic", "alembic.ini", "/README.md", "/pyproject.toml"]
 
 [project]
 name            = "idp-app"

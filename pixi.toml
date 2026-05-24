@@ -44,7 +44,8 @@ httpx             = ">=0.27.0,<1"
 
 [feature.backend.pypi-dependencies]
 # Editable install so backend/src is importable during development.
-# Uses pixi-build-python (declared in backend/pyproject.toml) as the build backend.
+# hatchling (declared in backend/pyproject.toml) is used as the build backend.
+# pixi-build-python for conda packaging is declared separately in backend/pixi.toml.
 idp-app = { path = "backend", editable = true }
 
 # ---------------------------------------------------------------------------
@@ -114,7 +115,9 @@ backend-db-current   = { cmd = "alembic current",                 cwd = "backend
 # --- build (pixi-build-python → conda package) ---
 # Produces a .conda artifact in dist/ that is uploaded to GitHub releases.
 # Requires the pixi-build preview feature (enabled in [workspace] above).
-backend-build = { cmd = "pixi build --manifest-path backend/pyproject.toml --output-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
+# pixi-build-python is declared in backend/pixi.toml; it internally calls
+# hatchling (from backend/pyproject.toml) to produce the Python wheel.
+backend-build = { cmd = "pixi build --manifest-path backend/pixi.toml --output-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Frontend
