@@ -67,12 +67,9 @@ class Settings(BaseSettings):
         """Build DATABASE_URL from components when not provided directly."""
         if self.DATABASE_URL is None:
             if not self.DB_PASSWORD:
-                raise ValueError(
-                    "DB_PASSWORD must be set when DATABASE_URL is not provided directly."
-                )
+                raise ValueError("DB_PASSWORD must be set when DATABASE_URL is not provided directly.")
             self.DATABASE_URL = PostgresDsn(
-                f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
-                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+                f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
             )
         return self
 

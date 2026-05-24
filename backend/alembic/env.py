@@ -13,9 +13,9 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Import Base and all models so Alembic can detect schema changes
+import idp_app.models  # noqa: E402, F401  — registers all models
 from idp_app.core.config import get_settings  # noqa: E402
 from idp_app.core.database import Base  # noqa: E402
-import idp_app.models  # noqa: E402, F401  — registers all models
 
 target_metadata = Base.metadata
 

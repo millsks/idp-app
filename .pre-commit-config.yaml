@@ -22,11 +22,13 @@ repos:
         args: [--allow-multiple-documents]
       - id: check-toml
       - id: check-json
+        exclude: ^frontend/tsconfig.*\.json$  # JSONC files (allow comments)
       - id: check-added-large-files
         args: [--maxkb=1000]
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: detect-private-key
+        exclude: \.secrets\.example$
       - id: debug-statements       # catch leftover breakpoint() / pdb calls
       - id: mixed-line-ending
         args: [--fix=lf]
@@ -78,9 +80,11 @@ repos:
         args: [--config-file, backend/pyproject.toml]
         files: ^backend/src/
         additional_dependencies:
+          - fastapi>=0.115.0
           - pydantic>=2.10.0
           - pydantic-settings>=2.6.0
           - sqlalchemy>=2.0.0
+          - celery>=5.0.0
           - types-passlib
           - types-redis
           - types-python-jose
@@ -93,6 +97,7 @@ repos:
         name: bandit — backend
         args: [-r, backend/src, -ll, --configfile, backend/pyproject.toml]
         files: ^backend/src/
+        pass_filenames: false
 
   # ---------------------------------------------------------------------------
   # Frontend — JavaScript / TypeScript (runs only on files under frontend/)

@@ -10,11 +10,10 @@ os.environ.setdefault("DB_PASSWORD", "test-password-not-used")
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
-
 from idp_app.core.database import Base, get_db
 from idp_app.main import create_app
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 # In-memory SQLite via aiosqlite.
 # StaticPool keeps a single connection so the schema persists across
