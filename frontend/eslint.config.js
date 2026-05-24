@@ -69,6 +69,8 @@ export default tseslint.config(
       "security/detect-object-injection": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
+      // expect(mockFn).toHaveBeenCalledWith() is always safe — disable false positive
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 );

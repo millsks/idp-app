@@ -16,10 +16,10 @@ interface MockAuthState {
   isLoading: boolean;
 }
 
-const mockUseAuth = vi.fn<[], MockAuthState>();
+const mockUseAuth = vi.fn<() => MockAuthState>();
 
 vi.mock("../../hooks/useAuth", () => ({
-  useAuth: (): MockAuthState => mockUseAuth() as MockAuthState,
+  useAuth: (): MockAuthState => mockUseAuth(),
 }));
 
 function renderWithRoute(initialPath: string) {

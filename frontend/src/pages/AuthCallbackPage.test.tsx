@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, type Mock } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
@@ -13,7 +13,7 @@ function LocationDisplay() {
 }
 
 // Provide a controllable mock for AuthContext.
-const mockLogin = vi.fn<[string], Promise<void>>();
+const mockLogin = vi.fn<(code: string) => Promise<void>>();
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ login: mockLogin }),
@@ -40,7 +40,7 @@ describe("AuthCallbackPage", () => {
   });
 
   it("calls login() with the exchange code and redirects to / on success (AC-3)", async () => {
-    (mockLogin as Mock).mockResolvedValue(undefined);
+    mockLogin.mockResolvedValue(undefined);
     renderCallbackPage("?exchange_code=abc123");
 
     await waitFor(() => {
@@ -50,7 +50,7 @@ describe("AuthCallbackPage", () => {
   });
 
   it("respects ?redirect= param and navigates there on success (AC-3)", async () => {
-    (mockLogin as Mock).mockResolvedValue(undefined);
+    mockLogin.mockResolvedValue(undefined);
     renderCallbackPage("?exchange_code=abc123&redirect=%2Fprofile");
 
     await waitFor(() => {
@@ -67,7 +67,7 @@ describe("AuthCallbackPage", () => {
   });
 
   it("redirects to /login?error=auth_failed when login() rejects (AC-4)", async () => {
-    (mockLogin as Mock).mockRejectedValue(new Error("expired"));
+    mockLogin.mockRejectedValue(new Error("expired"));
     renderCallbackPage("?exchange_code=expired_code");
 
     await waitFor(() => {
