@@ -1,8 +1,9 @@
 """Password hashing and JWT token utilities."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 
 from idp_app.core.config import get_settings
@@ -23,24 +24,21 @@ def hash_password(password: str) -> str:
 
 
 def create_access_token(data: dict[str, str], expires_delta: timedelta | None = None) -> str:
-    """Create a signed JWT access token."""
-    to_encode = data.copy()
-    expire = datetime.now(UTC) + (
-        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode["exp"] = expire.isoformat()  # type: ignore[assignment]
+    """Create a signed JWT access token.
+
+    The ``exp`` claim is stored as a Unix epoch integer as required by
+    RFC 7519 §4.1.4 (NumericDate).
+    """
+    to_encode: dict[str, Any] = {**data}
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode["exp"] = int(expire.timestamp())  # NumericDate — must be an int
     return str(jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM))
 
 
-def decode_access_token(token: str) -> dict[str, str]:
+def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and verify a JWT access token.
 
     Raises :exc:`jose.JWTError` if the token is invalid or expired.
     """
-    try:
-        payload: dict[str, str] = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        return payload
-    except JWTError:
-        raise
+    payload: dict[str, Any] = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    return payload

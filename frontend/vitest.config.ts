@@ -10,6 +10,10 @@ export default defineConfig({
     },
   },
   test: {
+    // Expose Vitest globals (describe, it, expect, …) without explicit imports.
+    // Required by @testing-library/jest-dom which calls expect.extend() at load time.
+    globals: true,
+
     // Use jsdom to simulate a browser environment
     environment: "jsdom",
 

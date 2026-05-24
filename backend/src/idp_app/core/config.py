@@ -38,7 +38,7 @@ class Settings(BaseSettings):
         """Accept a comma-separated string or list."""
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",")]
-        return value  # type: ignore[return-value]
+        return value  # type: ignore[no-any-return]
 
     # ------------------------------------------------------------------
     # Security
@@ -51,9 +51,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Database (PostgreSQL)
     # ------------------------------------------------------------------
-    DATABASE_URL: PostgresDsn = PostgresDsn(
-        "postgresql://idp_user:idp_password@localhost:5432/idp_db"
-    )
+    DATABASE_URL: PostgresDsn = PostgresDsn("postgresql://idp_user:idp_password@localhost:5432/idp_db")
 
     # ------------------------------------------------------------------
     # Redis

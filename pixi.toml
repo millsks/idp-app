@@ -34,6 +34,7 @@ alembic           = ">=1.14.0,<2"
 celery            = ">=5.4.0,<6"    # celery[redis] extras via redis-py
 redis-py          = ">=5.2.0,<6"    # Celery broker & result backend
 psycopg2          = ">=2.9.0,<3"
+asyncpg           = ">=0.30.0,<1"    # async PostgreSQL driver for SQLAlchemy
 pydantic          = ">=2.10.0,<3"
 pydantic-settings = ">=2.6.0,<3"
 python-multipart  = ">=0.0.12"
@@ -61,6 +62,7 @@ mypy           = ">=1.11.0,<2"
 ruff           = ">=0.9.0,<1"
 bandit         = ">=1.8.0,<2"
 python-build   = ">=1.2.0,<2"    # provides `python -m build` for wheel/sdist packaging
+aiosqlite      = ">=0.20.0,<1"   # async SQLite driver used by the test suite
 
 [feature.backend-dev.pypi-dependencies]
 types-passlib     = ">=1.7.7,<2"
@@ -92,7 +94,7 @@ backend-format-check = { cmd = "ruff format --check src tests",  cwd = "backend"
 backend-typecheck = { cmd = "mypy", cwd = "backend", description = "Type-check backend Python with mypy" }
 
 # --- security ---
-backend-security        = { cmd = "bandit -r src -ll -f text",                          cwd = "backend", description = "Security-scan backend Python code" }
+backend-security        = { cmd = "bandit -r src -ll -f screen",                             cwd = "backend", description = "Security-scan backend Python code" }
 backend-security-report = { cmd = "bandit -r src -ll -f json -o bandit-report.json || true", cwd = "backend", description = "Generate bandit JSON security report" }
 
 # --- testing ---

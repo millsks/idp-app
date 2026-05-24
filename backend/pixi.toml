@@ -45,6 +45,7 @@ alembic           = ">=1.14.0,<2"
 celery            = ">=5.4.0,<6"
 redis-py          = ">=5.2.0,<6"    # celery[redis]: Celery broker & result backend
 psycopg2          = ">=2.9.0,<3"
+asyncpg           = ">=0.30.0,<1"    # async PostgreSQL driver for SQLAlchemy
 pydantic          = ">=2.10.0,<3"
 pydantic-settings = ">=2.6.0,<3"
 python-multipart  = ">=0.0.12"

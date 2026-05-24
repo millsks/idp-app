@@ -26,7 +26,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Vitest globals (describe, it, expect, …) */
+    "types": ["vitest/globals"]
   },
   "include": ["src"]
 }

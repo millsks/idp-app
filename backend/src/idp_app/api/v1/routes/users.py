@@ -21,9 +21,7 @@ async def create_user(
 ) -> User:
     """Register a new user account."""
     # Check for duplicate email / username
-    existing = await db.execute(
-        select(User).where((User.email == user_in.email) | (User.username == user_in.username))
-    )
+    existing = await db.execute(select(User).where((User.email == user_in.email) | (User.username == user_in.username)))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

@@ -20,5 +20,5 @@ async def test_health_check_version_format(client: AsyncClient) -> None:
     response = await client.get("/api/v1/health")
     version = response.json()["version"]
     parts = version.split(".")
-    assert len(parts) == 3  # noqa: PLR2004
+    assert len(parts) == 3
     assert all(part.isdigit() for part in parts)

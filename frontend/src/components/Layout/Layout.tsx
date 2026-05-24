@@ -68,10 +68,7 @@ export function Layout() {
   return (
     <Box sx={{ display: "flex" }}>
       {/* Top app bar */}
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}
-      >
+      <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar>
           <IconButton
             color="inherit"

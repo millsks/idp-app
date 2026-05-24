@@ -1,26 +1,31 @@
 """Shared pytest fixtures for the backend test suite."""
 
+from collections.abc import AsyncGenerator
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from idp_app.core.database import Base, get_db
 from idp_app.main import create_app
 
-# Use an in-memory SQLite database for tests (no PostgreSQL required)
+# In-memory SQLite via aiosqlite.
+# StaticPool keeps a single connection so the schema persists across
+# all requests made within a single test.
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
-@pytest.fixture(scope="session")
-def anyio_backend() -> str:
-    return "asyncio"
-
-
-@pytest.fixture(scope="session")
-async def test_engine() -> object:
-    """Create a shared async SQLite engine for the test session."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+@pytest.fixture
+async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
+    """Create an in-memory SQLite engine for one test, in the same event loop."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
@@ -30,11 +35,8 @@ async def test_engine() -> object:
 
 
 @pytest.fixture
-async def db_session(test_engine: object) -> object:  # type: ignore[override]
-    """Provide a transactional database session that rolls back after each test."""
-    from sqlalchemy.ext.asyncio import AsyncEngine
-
-    assert isinstance(test_engine, AsyncEngine)
+async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+    """Transactional session that rolls back after each test."""
     session_factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
@@ -44,13 +46,17 @@ async def db_session(test_engine: object) -> object:  # type: ignore[override]
 @pytest.fixture
 async def app(db_session: AsyncSession) -> FastAPI:
     """FastAPI application with the test database injected."""
+
+    async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        yield db_session
+
     application = create_app()
-    application.dependency_overrides[get_db] = lambda: db_session
+    application.dependency_overrides[get_db] = _override_get_db
     return application
 
 
 @pytest.fixture
-async def client(app: FastAPI) -> object:
-    """Async HTTP test client."""
+async def client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
+    """Async HTTP test client backed by the in-process ASGI app."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac

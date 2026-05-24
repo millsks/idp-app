@@ -25,11 +25,15 @@ apiClient.interceptors.request.use((config) => {
 // Global error handling — redirect to /login on 401
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      localStorage.removeItem("access_token");
-      window.location.href = "/login";
+  (error: unknown) => {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem("access_token");
+        globalThis.location.href = "/login";
+      }
+      throw error; // AxiosError extends Error ✓
     }
-    return Promise.reject(error);
+    // Wrap non-Error rejections so callers always receive an Error
+    throw error instanceof Error ? error : new Error(String(error));
   },
 );
