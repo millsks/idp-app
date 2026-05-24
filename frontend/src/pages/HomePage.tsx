@@ -23,6 +23,7 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import SecurityIcon from "@mui/icons-material/Security";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import { Link as RouterLink } from "react-router-dom";
+import { PublicPreviewStrip } from "../components/LandingPreview/PublicPreviewStrip";
 
 interface Pillar {
   icon: React.ReactElement;
@@ -167,6 +168,8 @@ export function HomePage() {
           ))}
         </Grid2>
       </Box>
+
+      <PublicPreviewStrip />
     </Box>
   );
 }
