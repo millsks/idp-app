@@ -171,7 +171,7 @@ jobs:
       - name: Generate backend coverage report
         run: pixi run backend-test
         env:
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
 
       - name: Generate frontend coverage report
         run: pixi run frontend-test-coverage
