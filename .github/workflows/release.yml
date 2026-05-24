@@ -227,18 +227,19 @@ jobs:
       # -----------------------------------------------------------------------
       # Build release artifacts
       #
-      # Two artifacts are uploaded to the GitHub release:
+      # Three artifacts are uploaded to the GitHub release:
       #   1. Backend Python wheel   — built by `python -m build` via hatchling
-      #   2. Frontend bundle archive — Vite production build tarball
+      #   2. Backend conda package  — built by pixi-build-python (wraps the wheel)
+      #   3. Frontend bundle archive — Vite production build tarball
       #
       # No PyPI publishing.
       # -----------------------------------------------------------------------
-      - name: Build backend wheel
+      - name: Build backend artifacts (wheel + conda package)
         if: steps.should_skip.outputs.skip != 'true'
         run: |
           mkdir -p dist/backend
           pixi run backend-build
-          echo "✅ Backend wheel built"
+          echo "✅ Backend artifacts built"
           ls -lh dist/backend/
 
       - name: Build frontend bundle
@@ -282,7 +283,8 @@ jobs:
           | Artifact | Description |
           |---|---|
           | `idp-frontend-*.tar.gz` | Vite production bundle (serve with any static host or Nginx) |
-          | `idp_app-*.whl` | Backend Python wheel (install via `pip install`) |
+          | `idp_app-*.whl` | Backend Python wheel (install via `pip`) |
+          | `idp-app-*.conda` | Backend conda package (install via `pixi` or `conda`) |
 
           📝 **Full changelog**: [CHANGELOG.md](CHANGELOG_LINK)
 
@@ -308,9 +310,11 @@ jobs:
           body:       ${{ steps.release_notes.outputs.notes }}
           draft:      false
           prerelease: ${{ github.event.inputs.prerelease }}
-          # Upload the backend wheel and the frontend tarball
+          # Upload the wheel, conda package, and frontend tarball
           files: |
             dist/backend/*.whl
+            dist/backend/*.conda
+            dist/backend/*.tar.bz2
             dist/idp-frontend-${{ env.NEW_TAG }}.tar.gz
           token: ${{ steps.app-token.outputs.token }}
 
