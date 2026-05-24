@@ -5,9 +5,6 @@ description = "Integrated Developer Portal — FastAPI backend + React frontend"
 authors     = ["Kevin Mills <millsks@gmail.com>"]
 channels    = ["conda-forge"]
 platforms   = ["linux-64", "linux-aarch64", "osx-arm64", "osx-64"]
-# Enable pixi-build so `pixi build` can produce conda packages from
-# backend/pyproject.toml (pixi-build-python backend).
-preview     = ["pixi-build"]
 
 # ---------------------------------------------------------------------------
 # Workspace-level dependencies (available in every environment)
@@ -45,7 +42,6 @@ httpx             = ">=0.27.0,<1"
 [feature.backend.pypi-dependencies]
 # Editable install so backend/src is importable during development.
 # hatchling (declared in backend/pyproject.toml) is used as the build backend.
-# pixi-build-python for conda packaging is declared separately in backend/pixi.toml.
 idp-app = { path = "backend", editable = true }
 
 # ---------------------------------------------------------------------------
@@ -58,6 +54,7 @@ pytest-asyncio = ">=0.24.0,<1"
 mypy           = ">=1.11.0,<2"
 ruff           = ">=0.9.0,<1"
 bandit         = ">=1.8.0,<2"
+python-build   = ">=1.2.0,<2"    # `python -m build` for wheel/sdist packaging
 
 [feature.backend-dev.pypi-dependencies]
 types-passlib     = ">=1.7.7,<2"
@@ -112,12 +109,10 @@ backend-migration    = { cmd = "alembic revision --autogenerate", cwd = "backend
 backend-db-history   = { cmd = "alembic history --verbose",       cwd = "backend", description = "Show Alembic migration history" }
 backend-db-current   = { cmd = "alembic current",                 cwd = "backend", description = "Show current Alembic migration state" }
 
-# --- build (pixi-build-python → conda package) ---
-# Produces a .conda artifact in dist/ that is uploaded to GitHub releases.
-# Requires the pixi-build preview feature (enabled in [workspace] above).
-# pixi-build-python is declared in backend/pixi.toml; it internally calls
-# hatchling (from backend/pyproject.toml) to produce the Python wheel.
-backend-build = { cmd = "pixi build --manifest-path backend/pixi.toml --output-dir dist/backend", description = "Build backend conda package via pixi-build-python" }
+# --- build (hatchling wheel via python -m build) ---
+# Produces a .whl artifact in dist/backend/ that is uploaded to GitHub releases.
+# python -m build delegates to hatchling (declared in backend/pyproject.toml).
+backend-build = { cmd = "python -m build --wheel --outdir ../dist/backend", cwd = "backend", description = "Build backend Python wheel via hatchling" }
 
 # ---------------------------------------------------------------------------
 # Tasks — Frontend
@@ -152,7 +147,7 @@ format = { depends-on = ["backend-format", "frontend-format"], description = "Fo
 test   = { depends-on = ["backend-test",   "frontend-test"],   description = "Run all tests (backend + frontend)" }
 check  = { depends-on = ["backend-check",  "frontend-check"],  description = "Run all quality checks (backend + frontend)" }
 
-# Build all release artifacts: backend conda package + frontend bundle archive.
+# Build all release artifacts: backend wheel + frontend bundle archive.
 # Run quality checks first, then build. Output lands in dist/.
 release-artifacts = { depends-on = ["backend-check", "frontend-check", "frontend-build", "backend-build", "frontend-archive"], description = "Build and archive all release artifacts into dist/" }
 
