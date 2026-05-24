@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-idp-app-2026-05-24/prd.md
   - _bmad-output/planning-artifacts/architecture.md
