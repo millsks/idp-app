@@ -59,12 +59,12 @@ class TestGetUser:
         assert response.json()["id"] == user_id
 
     async def test_get_nonexistent_user_returns_404(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/users/999999")
+        response = await client.get("/api/v1/users/99999")
         assert response.status_code == 404
 
 
 class TestUpdateUser:
-    async def test_update_full_name(self, client: AsyncClient, created_user: dict[str, object]) -> None:
+    async def test_update_user_success(self, client: AsyncClient, created_user: dict[str, object]) -> None:
         user_id = created_user["id"]
         response = await client.patch(
             f"/api/v1/users/{user_id}",
@@ -74,5 +74,5 @@ class TestUpdateUser:
         assert response.json()["full_name"] == "Alice Updated"
 
     async def test_update_nonexistent_user_returns_404(self, client: AsyncClient) -> None:
-        response = await client.patch("/api/v1/users/999999", json={"full_name": "Ghost"})
+        response = await client.patch("/api/v1/users/99999", json={"full_name": "Ghost"})
         assert response.status_code == 404

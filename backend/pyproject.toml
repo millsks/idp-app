@@ -90,6 +90,7 @@ addopts      = """\
 [tool.coverage.run]
 source = ["idp_app"]
 branch = true
+core   = "ctrace"
 omit   = ["src/idp_app/migrations/*", "tests/*", "alembic/*"]
 
 [tool.coverage.report]
@@ -134,7 +135,8 @@ ignore = [
 known-first-party = ["idp_app"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S106", "T20"]
+"tests/**" = ["S101", "S106", "S107", "T20"]        # running ruff from backend/
+"**/tests/**" = ["S101", "S106", "S107", "T20"]     # running ruff from repo root (pre-commit)
 
 [tool.ruff.format]
 quote-style               = "double"

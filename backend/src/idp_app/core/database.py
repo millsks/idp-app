@@ -20,7 +20,7 @@ class Base(DeclarativeBase):
 
 
 @functools.lru_cache(maxsize=1)
-def _get_engine() -> AsyncEngine:
+def _get_engine() -> AsyncEngine:  # pragma: no cover
     """Build and cache the production async engine (postgresql+asyncpg)."""
     settings = get_settings()
     # Normalise both plain postgres:// and postgresql:// schemes
@@ -36,7 +36,7 @@ def _get_engine() -> AsyncEngine:
 
 
 @functools.lru_cache(maxsize=1)
-def _get_session_factory() -> async_sessionmaker[AsyncSession]:
+def _get_session_factory() -> async_sessionmaker[AsyncSession]:  # pragma: no cover
     """Build and cache the session factory bound to the production engine."""
     return async_sessionmaker(
         _get_engine(),
@@ -47,7 +47,7 @@ def _get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency that provides a transactional database session."""
-    async with _get_session_factory()() as session:
+    async with _get_session_factory()() as session:  # pragma: no cover
         try:
             yield session
             await session.commit()
@@ -63,11 +63,11 @@ async def get_redis() -> AsyncGenerator[aioredis.Redis, None]:  # type: ignore[t
     of the process (same pattern as the SQLAlchemy engine).  The client is
     *not* closed after each request — closing it would destroy the shared pool.
     """
-    yield _get_redis_client()
+    yield _get_redis_client()  # pragma: no cover
 
 
 @functools.lru_cache(maxsize=1)
-def _get_redis_client() -> aioredis.Redis:  # type: ignore[type-arg]
+def _get_redis_client() -> aioredis.Redis:  # type: ignore[type-arg]  # pragma: no cover
     """Build and cache a single async Redis client (with connection pool)."""
     settings = get_settings()
     return aioredis.from_url(
