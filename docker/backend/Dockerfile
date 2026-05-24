@@ -17,12 +17,14 @@ WORKDIR /app
 # Copy pixi manifests first for better layer caching
 COPY pixi.toml pixi.lock ./
 
-# LICENSE is referenced as "../LICENSE" in backend/pyproject.toml (relative to
-# the backend/ dir), so it must be present at /app/LICENSE inside the builder.
+# LICENSE is referenced as "../LICENSE" in backend/pyproject.toml, so it must
+# be present at /app/LICENSE inside the builder.
 COPY LICENSE ./
 
-# Copy backend package so pixi can perform the editable install
-COPY backend/pyproject.toml backend/
+# Copy all files hatchling needs to build the editable install:
+#   pyproject.toml, README.md — package metadata
+#   src/                      — the actual Python package
+COPY backend/pyproject.toml backend/README.md backend/
 COPY backend/src             backend/src
 
 # Install the default environment (backend + backend-dev tools are included,
