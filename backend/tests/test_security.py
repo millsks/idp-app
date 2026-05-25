@@ -1,7 +1,7 @@
 """Tests for password hashing and JWT utilities."""
 
+import jwt
 import pytest
-from jose import JWTError
 
 from idp_app.core.security import (
     create_access_token,
@@ -44,5 +44,5 @@ class TestJWT:
         assert "exp" in payload
 
     def test_invalid_token_raises(self) -> None:
-        with pytest.raises(JWTError):
+        with pytest.raises(jwt.PyJWTError):
             decode_access_token("not.a.valid.token")

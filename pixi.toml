@@ -51,10 +51,9 @@ asyncpg           = ">=0.30.0,<1"    # async PostgreSQL driver for SQLAlchemy
 pydantic          = ">=2.10.0,<3"
 pydantic-settings = ">=2.6.0,<3"
 python-multipart  = ">=0.0.12"
-python-jose       = ">=3.3.0,<4"   # python-jose[cryptography] extras via cryptography
-cryptography      = ">=43.0.0"       # JWT signing for python-jose
-passlib           = ">=1.7.4,<2"    # passlib[bcrypt] extras via bcrypt
-bcrypt            = ">=4.2.0,<5"     # password hashing for passlib
+pyjwt             = ">=2.9.0,<3"    # JWT encode/decode (inline types — no stubs needed)
+pwdlib            = ">=0.3.0,<1"    # password hashing (inline types — no stubs needed)
+bcrypt            = ">=4.2.0,<5"     # bcrypt hasher backend for pwdlib
 httpx             = ">=0.27.0,<1"
 
 [feature.backend.pypi-dependencies]
@@ -77,12 +76,6 @@ bandit         = ">=1.8.0,<2"
 python-build   = ">=1.2.0,<2"    # provides `python -m build` for wheel/sdist packaging
 aiosqlite      = ">=0.20.0,<1"   # async SQLite driver used by the test suite
 types-redis    = ">=4.6.0,<5"    # mypy stubs for redis-py
-
-[feature.backend-dev.pypi-dependencies]
-# types-passlib and types-python-jose have no conda-forge equivalents;
-# they are kept as PyPI-only installs until upstream publishes conda packages.
-types-passlib     = ">=1.7.7,<2"
-types-python-jose = ">=3.3.4,<4"
 
 # ---------------------------------------------------------------------------
 # Environments
