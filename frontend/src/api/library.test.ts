@@ -4,7 +4,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { apiClient } from "./client";
-import { fetchPublicLibraryItems, fetchLibraryItems, type LibraryItemList } from "./library";
+import {
+  fetchPublicLibraryItems,
+  fetchLibraryItems,
+  fetchLibraryItem,
+  type LibraryItemList,
+  type LibraryItemDetail,
+} from "./library";
 
 vi.mock("./client", () => ({
   apiClient: {
@@ -102,5 +108,39 @@ describe("fetchLibraryItems", () => {
       .paramsSerializer;
     const serialized = serialize({ tags: ["python", "llm"] });
     expect(serialized).toBe("tags=python&tags=llm");
+  });
+});
+
+describe("fetchLibraryItem", () => {
+  const mockDetail: LibraryItemDetail = {
+    slug: "python-skill",
+    title: "Python Skill",
+    description: "A test skill.",
+    content_type: "Skill",
+    tags: ["python"],
+    is_public: true,
+    target_ai: "claude",
+    author: "alice",
+    last_updated: null,
+    content: "# Python Skill\n\nContent here.",
+    github_url: "https://github.com/owner/repo/blob/main/skills/python-skill/SKILL.md",
+  };
+
+  it("calls GET /library/items/:slug and returns the detail", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockDetail });
+
+    const result = await fetchLibraryItem("python-skill");
+
+    expect(apiClient.get).toHaveBeenCalledWith("/library/items/python-skill"); // encodeURIComponent is a no-op for simple slugs
+    expect(result).toEqual(mockDetail);
+  });
+
+  it("includes the content and github_url fields in the returned detail", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockDetail });
+
+    const result = await fetchLibraryItem("python-skill");
+
+    expect(result.content).toBe(mockDetail.content);
+    expect(result.github_url).toBe(mockDetail.github_url);
   });
 });

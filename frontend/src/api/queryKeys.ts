@@ -13,4 +13,7 @@ export const QUERY_KEYS = {
 
   /** Authenticated library items with filters — GET /library/items */
   libraryItems: (filters: LibraryFilters) => ["library", "items", filters] as const,
+
+  /** Single library item detail — GET /library/items/:slug */
+  libraryItem: (slug: string) => ["library", "item", slug] as const,
 } as const;

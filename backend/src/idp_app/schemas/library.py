@@ -31,6 +31,19 @@ class LibraryItemList(BaseModel):
     pages: int
 
 
+class LibraryItemDetail(LibraryItem):
+    """Schema for a single library item with full content and computed GitHub source URL.
+
+    Extends ``LibraryItem`` by adding the ``content`` field (raw Markdown) and
+    ``github_url`` (pre-computed server-side so the frontend never needs to
+    know the content repository coordinates).  ``github_url`` is ``None`` when
+    the content repository is not configured.
+    """
+
+    content: str
+    github_url: str | None = None
+
+
 class LibrarySyncStatus(BaseModel):
     """Response body for the POST /library/refresh endpoint."""
 

@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
 
 import { SkillCard } from "./SkillCard";
@@ -24,7 +25,9 @@ const baseItem: LibraryItem = {
 function renderCard(item: LibraryItem = baseItem) {
   return render(
     <ThemeProvider theme={theme}>
-      <SkillCard item={item} />
+      <MemoryRouter>
+        <SkillCard item={item} />
+      </MemoryRouter>
     </ThemeProvider>,
   );
 }

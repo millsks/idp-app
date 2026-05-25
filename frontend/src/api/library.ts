@@ -27,6 +27,11 @@ export interface LibraryItemList {
   pages: number;
 }
 
+export interface LibraryItemDetail extends LibraryItem {
+  content: string;
+  github_url: string | null;
+}
+
 export interface LibraryFilters {
   type?: string;
   tags?: string[];
@@ -46,6 +51,17 @@ export interface LibraryFilters {
  */
 export async function fetchPublicLibraryItems(): Promise<LibraryItemList> {
   const response = await apiClient.get<LibraryItemList>("/library/items/public");
+  return response.data;
+}
+
+/**
+ * Fetch a single library item by slug (requires auth).
+ * Returns the full detail including raw Markdown content and GitHub source URL.
+ */
+export async function fetchLibraryItem(slug: string): Promise<LibraryItemDetail> {
+  const response = await apiClient.get<LibraryItemDetail>(
+    `/library/items/${encodeURIComponent(slug)}`,
+  );
   return response.data;
 }
 

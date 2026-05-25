@@ -20,6 +20,16 @@
 
 - **Full dataset loaded into memory before filtering** [`backend/src/idp_app/api/v1/routes/library.py`]: All library items are fetched from Redis and decoded before any filtering is applied. Explicitly accepted in Dev Notes as viable for MVP1 (≤1,000 items). Should be revisited if the catalogue grows significantly.
 
+## Deferred from: code review of story-4.3-library-item-detail (2026-05-25)
+
+- **`model_dump()` spread into `LibraryItemDetail` constructor** [`backend/src/idp_app/api/v1/routes/library.py:257`]: `LibraryItemDetail(**item.model_dump(), content=content, github_url=github_url)` works correctly but is fragile if parent/child schema diverge; consider `model_validate` or a `from_item` classmethod. Pre-existing spread pattern.
+- **`useLibraryItem` missing `staleTime`** [`frontend/src/hooks/useLibraryItem.ts:9`]: Default `staleTime: 0` causes full Markdown payload refetch on every component mount. Set `staleTime` consistent with cache TTL policy. Performance concern, not a bug.
+- **`toLocaleDateString` hardcodes `"en-US"` locale** [`frontend/src/components/LibraryItem/ItemDetail.tsx:119`]: Renders dates in US locale regardless of user's browser locale. Use `undefined` to respect user locale. No i18n framework in project yet.
+- **`handleBack` hardcodes `/library`** [`frontend/src/components/LibraryItem/ItemDetail.tsx:88`]: Users who arrive via a deep link (bookmark/share) are always routed to `/library` on back; use `navigate(-1)` with `/library` fallback. UX nice-to-have.
+- **Whitespace slug bypasses `enabled: Boolean(slug)` guard** [`frontend/src/hooks/useLibraryItem.ts:11`]: A slug of only whitespace is truthy, so the query fires and gets a 404 (which is handled). Use `slug.trim().length > 0`. Trivial edge case, error state covers it.
+- **Redis `hgetall` may return bytes if `decode_responses` not set** [`backend/src/idp_app/api/v1/routes/library.py:237`]: If Redis client is misconfigured without `decode_responses=True`, `raw.get("content")` returns `bytes` and Pydantic raises. Pre-existing Redis config concern shared with all routes.
+- **AC 9 regression test uses unusual Redis state** [`backend/tests/test_library.py:771`]: `test_public_endpoint_not_regressed` places `skill-private` in the public index then relies on route-level `is_public` filtering to exclude it. Valid test for the failsafe, but does not verify that `library_sync` never writes private items to the public index. Add a complementary sync-level test in a future story.
+
 ## Deferred from: story-2.2-google-oauth-backend manual verification (2026-05-24)
 
 - **Google Cloud project not yet available for OAuth verification** [`.env` / Google Cloud Console]: End-to-end Google login cannot be verified locally until a Google Cloud project is created and OAuth web credentials are provisioned (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) with redirect URI `http://localhost:8000/api/v1/auth/google/callback`. Once available, set `FRONTEND_URL` to the active dev port and re-run manual login validation.
