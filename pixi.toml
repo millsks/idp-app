@@ -76,10 +76,12 @@ ruff           = ">=0.9.0,<1"
 bandit         = ">=1.8.0,<2"
 python-build   = ">=1.2.0,<2"    # provides `python -m build` for wheel/sdist packaging
 aiosqlite      = ">=0.20.0,<1"   # async SQLite driver used by the test suite
+types-redis    = ">=4.6.0,<5"    # mypy stubs for redis-py
 
 [feature.backend-dev.pypi-dependencies]
+# types-passlib and types-python-jose have no conda-forge equivalents;
+# they are kept as PyPI-only installs until upstream publishes conda packages.
 types-passlib     = ">=1.7.7,<2"
-types-redis       = ">=4.6.0,<5"
 types-python-jose = ">=3.3.4,<4"
 
 # ---------------------------------------------------------------------------
