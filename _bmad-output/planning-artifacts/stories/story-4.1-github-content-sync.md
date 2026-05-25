@@ -1,6 +1,6 @@
 # Story 4.1: GitHub Content Sync Service
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

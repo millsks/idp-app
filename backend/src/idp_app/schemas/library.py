@@ -29,3 +29,11 @@ class LibraryItemList(BaseModel):
     page: int
     size: int
     pages: int
+
+
+class LibrarySyncStatus(BaseModel):
+    """Response body for the POST /library/refresh endpoint."""
+
+    task_id: str
+    status: str
+    message: str

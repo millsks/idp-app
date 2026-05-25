@@ -1,31 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { HomePage } from "./HomePage";
 import { theme } from "../theme";
 
-// Prevent PublicPreviewStrip from making real network calls in these tests.
-vi.mock("../api/client", () => ({
-  apiClient: {
-    get: vi.fn().mockResolvedValue({ data: { items: [], total: 0, page: 1, size: 0, pages: 0 } }),
-  },
-}));
-
 function renderHomePage() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <HomePage />
-        </ThemeProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <HomePage />
+      </ThemeProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -86,5 +73,17 @@ describe("HomePage", () => {
   it("supporting copy describes the portal purpose (AC-2)", () => {
     renderHomePage();
     expect(screen.getByText(/community-built, open-source portal/i)).toBeInTheDocument();
+  });
+
+  it("AI Skills pillar card links to /library", () => {
+    renderHomePage();
+    const libraryLink = screen.getByRole("link", { name: /go to ai skills/i });
+    expect(libraryLink).toHaveAttribute("href", "/library");
+  });
+
+  it("does not render a PublicPreviewStrip on the home page", () => {
+    renderHomePage();
+    // The Explore the Library heading only lives on LibraryPage now
+    expect(screen.queryByText(/explore the library/i)).not.toBeInTheDocument();
   });
 });

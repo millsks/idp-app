@@ -6,10 +6,12 @@ from datetime import datetime
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from idp_app.core.database import get_redis
-from idp_app.schemas.library import LibraryItem, LibraryItemList
+from idp_app.core.security import get_current_user
+from idp_app.models.user import User
+from idp_app.schemas.library import LibraryItem, LibraryItemList, LibrarySyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +97,38 @@ async def list_public_library_items(
         size=total,
         pages=1 if total > 0 else 0,
     )
+
+
+@router.post(
+    "/refresh",
+    response_model=LibrarySyncStatus,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Trigger an immediate library sync",
+)
+async def trigger_library_refresh(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> LibrarySyncStatus:
+    """Enqueue an immediate ``library.sync_content`` Celery task.
+
+    Any authenticated user may trigger this endpoint.  The task runs
+    asynchronously in the background — this endpoint returns HTTP 202
+    immediately with the Celery task ID.
+
+    Returns HTTP 503 when the Celery broker is unavailable.
+    """
+    try:
+        # Import here to avoid worker.py circular import at module load time
+        from idp_app.tasks.library_sync import sync_library_content
+
+        result = sync_library_content.delay()
+        return LibrarySyncStatus(
+            task_id=result.id,
+            status="accepted",
+            message="Library sync task enqueued successfully.",
+        )
+    except Exception as exc:
+        logger.exception("Failed to enqueue library sync task: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to enqueue sync task — Celery broker may be unavailable.",
+        ) from exc

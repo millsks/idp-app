@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   Chip,
   Container,
@@ -23,13 +24,13 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import SecurityIcon from "@mui/icons-material/Security";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import { Link as RouterLink } from "react-router-dom";
-import { PublicPreviewStrip } from "../components/LandingPreview/PublicPreviewStrip";
 
 interface Pillar {
   icon: React.ReactElement;
   title: string;
   description: string;
   live: boolean;
+  href?: string;
 }
 
 const PILLARS: Pillar[] = [
@@ -39,6 +40,7 @@ const PILLARS: Pillar[] = [
     description:
       "Browse, search, and copy a curated collection of AI skills and prompt templates — ready to drop into any AI assistant.",
     live: true,
+    href: "/library",
   },
   {
     icon: <StorefrontIcon fontSize="large" />,
@@ -147,29 +149,51 @@ export function HomePage() {
                     }}
                   />
                 )}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box
+                {pillar.href ? (
+                  <CardActionArea
+                    component={RouterLink}
+                    to={pillar.href}
                     sx={{
-                      mb: 2,
-                      color: pillar.live ? "primary.main" : "text.disabled",
+                      flexGrow: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
                     }}
+                    aria-label={`Go to ${pillar.title}`}
                   >
-                    {pillar.icon}
-                  </Box>
-                  <Typography variant="h6" gutterBottom fontWeight={600}>
-                    {pillar.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {pillar.description}
-                  </Typography>
-                </CardContent>
+                    <CardContent sx={{ flexGrow: 1, width: "100%" }}>
+                      <Box sx={{ mb: 2, color: "primary.main" }}>{pillar.icon}</Box>
+                      <Typography variant="h6" gutterBottom fontWeight={600}>
+                        {pillar.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {pillar.description}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                ) : (
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box
+                      sx={{
+                        mb: 2,
+                        color: pillar.live ? "primary.main" : "text.disabled",
+                      }}
+                    >
+                      {pillar.icon}
+                    </Box>
+                    <Typography variant="h6" gutterBottom fontWeight={600}>
+                      {pillar.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {pillar.description}
+                    </Typography>
+                  </CardContent>
+                )}
               </Card>
             </Grid2>
           ))}
         </Grid2>
       </Box>
-
-      <PublicPreviewStrip />
     </Box>
   );
 }

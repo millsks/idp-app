@@ -44,6 +44,26 @@ app.config_from_object(
 app.autodiscover_tasks(["idp_app.tasks"])
 
 # ---------------------------------------------------------------------------
+# Celery Beat periodic schedule
+# ---------------------------------------------------------------------------
+app.conf.beat_schedule = {
+    "library-sync-on-startup-and-periodic": {
+        "task": "library.sync_content",
+        # Run immediately on Beat start, then repeat every LIBRARY_CACHE_TTL seconds.
+        # Using `countdown=0` on start is handled by `run_every`; the first execution
+        # fires as soon as Beat starts.
+        "schedule": settings.LIBRARY_CACHE_TTL,
+        "options": {"expires": settings.LIBRARY_CACHE_TTL},
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Task imports  (must come AFTER `app` is defined to avoid circular imports)
+# ---------------------------------------------------------------------------
+
+import idp_app.tasks.library_sync  # noqa: F401,E402
+
+# ---------------------------------------------------------------------------
 # Example tasks
 # ---------------------------------------------------------------------------
 
