@@ -9,6 +9,24 @@ platforms   = ["linux-64", "linux-aarch64", "osx-arm64", "osx-64"]
 # backend/pixi.toml is the package manifest (required by pixi's workspace
 # model); all other pixi config lives here in the root pixi.toml.
 preview     = ["pixi-build"]
+# Supply-chain cool-down: ignore any package version (conda-forge and PyPI)
+# published less than 5 days ago.  Mirrors the `minimumReleaseAge: "5 days"`
+# setting in .github/renovate.json so the same guard applies whether a
+# dependency is updated by Renovate or by a developer running `pixi update`
+# locally.  Relative time support requires pixi ≥ 0.67.0.
+exclude-newer = "5d"
+
+# ---------------------------------------------------------------------------
+# PyPI resolver options (applies to all [pypi-dependencies] sections)
+# ---------------------------------------------------------------------------
+# The workspace-level exclude-newer above is enforced by the conda (rattler)
+# resolver.  PyPI packages are resolved by a separate uv process that needs
+# its own equivalent gate.  Setting the same "5d" value here ensures that
+# types-passlib, types-redis, types-python-jose, and conventional-pre-commit
+# (and any future PyPI additions) are subject to the same supply-chain
+# cool-down as the conda packages.
+[pypi-options]
+exclude-newer = "5d"
 
 # ---------------------------------------------------------------------------
 # Workspace-level dependencies (available in every environment)
