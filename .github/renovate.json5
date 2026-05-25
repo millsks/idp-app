@@ -20,8 +20,9 @@
 
   // ── PR / commit defaults ───────────────────────────────────────────────────
   "labels": ["dependencies", "automated"],
+  // commitMessagePrefix owns the full prefix; commitMessageAction is the default
+  // ("update") and is omitted to avoid the config-migration deprecation warning.
   "commitMessagePrefix": "chore(deps):",
-  "commitMessageAction": "update",
   "branchPrefix": "renovate/",
   // Only rebase when there is an actual merge conflict; avoids hammering CI
   // every time main gets a new commit while pixi.lock PRs are open.
@@ -62,13 +63,6 @@
     "docker-compose", // docker-compose.yml   image: lines
     "regex"           // custom patterns (pixi CLI version — see customManagers)
   ],
-
-  // ── Pixi manager ───────────────────────────────────────────────────────────
-  // Renovate's pixi manager reads pixi.toml and can run `pixi update <pkg>`
-  // to regenerate pixi.lock after bumping a version constraint.
-  "pixi": {
-    "fileMatch": ["^pixi\\.toml$"]
-  },
 
   // ── Custom regex manager — pixi CLI version in workflow `with:` blocks ─────
   // The GitHub Actions manager tracks `uses: prefix-dev/setup-pixi@vX.Y.Z` but
@@ -145,6 +139,24 @@
       "matchManagers": ["pixi"],
       "groupName": "Pixi dependencies",
       "labels": ["backend", "dependencies", "automated"]
+    },
+
+    // ── [5a] PEP 440 range strategy for pixi PyPI packages ────────────────
+    // Packages sourced from PyPI inside pixi.toml (types-redis, conventional-
+    // pre-commit, etc.) use PEP 440 version specifiers (>=X.Y.Z,<N).  When a
+    // new major version crosses the upper bound, Renovate's pep440 module
+    // emits "failed to calculate newValue" and gives up.
+    // • versioning:pep440  — tells Renovate to use the PEP 440 scheme (not
+    //   conda versioning) for these deps.
+    // • rangeStrategy:bump — advance both the floor AND ceiling together
+    //   across a major boundary (e.g. >=4.6.0,<5 → >=5.0.0,<6) instead of
+    //   trying to widen or replace the range, which is what triggers the error.
+    {
+      "description": "pep440 versioning + bump strategy for pixi PyPI deps",
+      "matchManagers": ["pixi"],
+      "matchDatasources": ["pypi"],
+      "versioning": "pep440",
+      "rangeStrategy": "bump"
     },
 
     // ── [6] npm frontend runtime deps ─────────────────────────────────────
