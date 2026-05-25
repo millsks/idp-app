@@ -7,12 +7,13 @@ from datetime import datetime
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from idp_app.core.config import Settings, get_settings
 from idp_app.core.database import get_redis
 from idp_app.core.security import get_current_user
 from idp_app.models.user import User
-from idp_app.schemas.library import LibraryItem, LibraryItemList, LibrarySyncStatus
+from idp_app.schemas.library import LibraryItem, LibraryItemDetail, LibraryItemList, LibrarySyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ router = APIRouter()
 _PUBLIC_INDEX_KEY = "library:items:public"
 _ALL_ITEMS_KEY = "library:items"
 _ITEM_KEY_PREFIX = "library:item:"
+_CACHE_UNAVAILABLE_MSG = "Library cache is temporarily unavailable."
 
 
 def _decode_item(slug: str, raw: dict[str, str]) -> LibraryItem | None:
@@ -132,7 +134,7 @@ async def list_library_items(
         logger.exception("Redis error reading %s", _ALL_ITEMS_KEY)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Library cache is temporarily unavailable.",
+            detail=_CACHE_UNAVAILABLE_MSG,
         ) from exc
 
     all_items: list[LibraryItem] = []
@@ -149,7 +151,7 @@ async def list_library_items(
             logger.exception("Redis pipeline error fetching library items")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Library cache is temporarily unavailable.",
+                detail=_CACHE_UNAVAILABLE_MSG,
             ) from exc
 
         for slug, raw in zip(slug_list, raw_results, strict=False):
@@ -192,6 +194,81 @@ async def list_library_items(
         page=page,
         size=size,
         pages=pages,
+    )
+
+
+def _compute_github_url(
+    slug: str,
+    content_type: str,
+    owner: str,
+    repo: str,
+    branch: str,
+) -> str | None:
+    """Compute the GitHub blob URL for a library item's source file.
+
+    Skills live at ``skills/{slug}/SKILL.md``; prompts at ``prompts/{slug}.md``.
+    Returns ``None`` when owner, repo, or branch are not configured, or when
+    ``content_type`` is an unrecognised value.
+    """
+    if not owner or not repo or not branch:
+        return None
+    if content_type == "Skill":
+        path = f"skills/{slug}/SKILL.md"
+    elif content_type == "Prompt":
+        path = f"prompts/{slug}.md"
+    else:
+        logger.warning("Unknown content_type %r for slug %r — cannot compute GitHub URL", content_type, slug)
+        return None
+    return f"https://github.com/{owner}/{repo}/blob/{branch}/{path}"
+
+
+@router.get(
+    "/items/{slug}",
+    response_model=LibraryItemDetail,
+    status_code=status.HTTP_200_OK,
+    summary="Get a single library item by slug (authenticated)",
+)
+async def get_library_item(
+    slug: Annotated[str, Path(pattern=r"^[a-z0-9][a-z0-9-]{0,98}[a-z0-9]$|^[a-z0-9]$")],
+    current_user: Annotated[User, Depends(get_current_user)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],  # type: ignore[type-arg]
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> LibraryItemDetail:
+    """Return full detail for a single library item, including its raw Markdown content.
+
+    Requires a valid JWT — HTTP 401 is returned by the ``get_current_user`` dependency
+    when the token is missing or invalid.  Returns HTTP 404 when the slug does not exist
+    in the Redis cache.  Returns HTTP 503 when Redis is unreachable.
+    """
+    try:
+        raw: dict[str, str] = await redis.hgetall(f"{_ITEM_KEY_PREFIX}{slug}")
+    except Exception as exc:
+        logger.exception("Redis error reading item %s", slug)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_CACHE_UNAVAILABLE_MSG,
+        ) from exc
+
+    item = _decode_item(slug, raw)
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Library item '{slug}' not found.",
+        )
+
+    content = raw.get("content", "")
+    github_url = _compute_github_url(
+        slug=slug,
+        content_type=item.content_type,
+        owner=settings.GITHUB_CONTENT_OWNER,
+        repo=settings.GITHUB_CONTENT_REPO,
+        branch=settings.GITHUB_CONTENT_BRANCH,
+    )
+
+    return LibraryItemDetail(
+        **item.model_dump(),
+        content=content,
+        github_url=github_url,
     )
 
 

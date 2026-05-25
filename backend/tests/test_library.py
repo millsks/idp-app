@@ -1,13 +1,15 @@
 """Tests for the GET /api/v1/library/items/public endpoint."""
 
+import copy
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from idp_app.core.config import Settings, get_settings
 from idp_app.core.database import get_db, get_redis
 from idp_app.main import create_app
 
@@ -66,6 +68,7 @@ def _make_item_hash(
     target_ai: str | None = None,
     author: str | None = None,
     last_updated: str | None = None,
+    content: str = "",
 ) -> dict[str, str]:
     h: dict[str, str] = {
         "title": title,
@@ -80,7 +83,41 @@ def _make_item_hash(
         h["author"] = author
     if last_updated:
         h["last_updated"] = last_updated
+    h["content"] = content  # always store so test hashes mirror production structure
     return h
+
+
+_DETAIL_FIELDS = (
+    "slug",
+    "title",
+    "description",
+    "content_type",
+    "tags",
+    "is_public",
+    "target_ai",
+    "author",
+    "last_updated",
+    "content",
+    "github_url",
+)
+
+
+def _github_settings_dep(
+    owner: str = "test-owner",
+    repo: str = "test-repo",
+    branch: str = "main",
+) -> Callable[[], Settings]:
+    """Return a FastAPI dependency override for get_settings with GitHub content coordinates.
+
+    Uses ``Settings.model_construct`` to skip environment variable loading while
+    preserving full type compatibility with the ``Settings`` annotation on the route.
+    """
+    settings = Settings.model_construct(
+        GITHUB_CONTENT_OWNER=owner,
+        GITHUB_CONTENT_REPO=repo,
+        GITHUB_CONTENT_BRANCH=branch,
+    )
+    return lambda: settings
 
 
 # ---------------------------------------------------------------------------
@@ -549,3 +586,237 @@ class TestAuthenticatedLibraryListEndpoint:
             response = await ac.get("/api/v1/library/items", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
         assert response.json()["items"] == []
+
+
+# ---------------------------------------------------------------------------
+# Fixtures and helpers for GET /api/v1/library/items/{slug} (detail)
+# ---------------------------------------------------------------------------
+
+_DETAIL_STORE: dict[str, object] = {
+    "library:items": {"skill-alpha", "prompt-beta", "skill-private"},
+    "library:item:skill-alpha": _make_item_hash(
+        title="Alpha Skill",
+        content_type="Skill",
+        tags=["python", "ai"],
+        is_public="true",
+        author="alice",
+        content="# Alpha Skill\n\nThis is the full Markdown content.",
+    ),
+    "library:item:prompt-beta": _make_item_hash(
+        title="Beta Prompt",
+        content_type="Prompt",
+        tags=["writing"],
+        is_public="true",
+        author="bob",
+        content="## Beta Prompt\n\nPrompt content here.",
+    ),
+    "library:item:skill-private": _make_item_hash(
+        title="Private Skill",
+        content_type="Skill",
+        is_public="false",
+        content="Private content.",
+    ),
+}
+
+
+def _make_app_with_detail_items(
+    db_session: AsyncSession,
+    *,
+    owner: str = "test-owner",
+    repo: str = "test-repo",
+    branch: str = "main",
+) -> FastAPI:
+    """Create an app with items that include content, plus a GitHub settings override."""
+    fake = FakeRedis(copy.deepcopy(_DETAIL_STORE))
+
+    async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        yield db_session
+
+    async def _override_get_redis() -> AsyncGenerator[FakeRedis, None]:
+        yield fake
+
+    application = create_app()
+    application.dependency_overrides[get_db] = _override_get_db
+    application.dependency_overrides[get_redis] = _override_get_redis
+    application.dependency_overrides[get_settings] = _github_settings_dep(owner, repo, branch)
+    return application
+
+
+# ---------------------------------------------------------------------------
+# Tests for GET /api/v1/library/items/{slug} (AC: 6, 7, 8, 9, 10)
+# ---------------------------------------------------------------------------
+
+
+class TestLibraryItemDetailEndpoint:
+    """Tests for GET /api/v1/library/items/{slug} — authenticated detail view."""
+
+    async def test_200_returns_item_detail(self, db_session: AsyncSession) -> None:
+        """AC 6: Valid slug + JWT → HTTP 200 with item fields."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-alpha",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["slug"] == "skill-alpha"
+        assert data["title"] == "Alpha Skill"
+        assert data["content_type"] == "Skill"
+
+    async def test_content_field_present(self, db_session: AsyncSession) -> None:
+        """AC 6: Detail response includes the full raw Markdown content field."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-alpha",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        data = response.json()
+        assert "content" in data
+        assert "Alpha Skill" in data["content"]
+
+    async def test_all_metadata_fields_present(self, db_session: AsyncSession) -> None:
+        """AC 6: Response includes all expected metadata and detail fields."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-alpha",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        data = response.json()
+        for field in _DETAIL_FIELDS:
+            assert field in data, f"Missing field: {field}"
+
+    async def test_github_url_for_skill(self, db_session: AsyncSession) -> None:
+        """AC 6: Skill items have github_url pointing to skills/{slug}/SKILL.md."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-alpha",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.json()["github_url"] == (
+            "https://github.com/test-owner/test-repo/blob/main/skills/skill-alpha/SKILL.md"
+        )
+
+    async def test_github_url_for_prompt(self, db_session: AsyncSession) -> None:
+        """AC 6: Prompt items have github_url pointing to prompts/{slug}.md."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/prompt-beta",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.json()["github_url"] == (
+            "https://github.com/test-owner/test-repo/blob/main/prompts/prompt-beta.md"
+        )
+
+    async def test_404_for_nonexistent_slug(self, db_session: AsyncSession) -> None:
+        """AC 7: Non-existent slug → HTTP 404."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/does-not-exist",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.status_code == 404
+
+    async def test_401_without_jwt(self, db_session: AsyncSession) -> None:
+        """AC 8: No JWT → HTTP 401."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get("/api/v1/library/items/skill-alpha")
+        assert response.status_code == 401
+
+    async def test_private_item_accessible_by_slug(self, db_session: AsyncSession) -> None:
+        """AC 6: Authenticated users can access is_public=false items by slug."""
+        app = _make_app_with_detail_items(db_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-private",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.status_code == 200
+        assert response.json()["is_public"] is False
+
+    async def test_empty_cache_returns_404_not_500(self, db_session: AsyncSession) -> None:
+        """AC 10: Empty Redis → HTTP 404, not 500, for the detail endpoint."""
+        fake = FakeRedis({})
+
+        async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+            yield db_session
+
+        async def _override_get_redis() -> AsyncGenerator[FakeRedis, None]:
+            yield fake
+
+        app = create_app()
+        app.dependency_overrides[get_db] = _override_get_db
+        app.dependency_overrides[get_redis] = _override_get_redis
+        app.dependency_overrides[get_settings] = _github_settings_dep()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/any-slug",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.status_code == 404
+
+    async def test_public_endpoint_not_regressed(self, db_session: AsyncSession) -> None:
+        """AC 9: is_public=false items remain absent from the public listing endpoint."""
+        store: dict[str, object] = {
+            "library:items:public": {"skill-alpha", "skill-private"},
+            "library:item:skill-alpha": _make_item_hash(title="Alpha Skill", is_public="true"),
+            "library:item:skill-private": _make_item_hash(title="Private", is_public="false"),
+        }
+        fake = FakeRedis(store)
+
+        async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+            yield db_session
+
+        async def _override_get_redis() -> AsyncGenerator[FakeRedis, None]:
+            yield fake
+
+        app = create_app()
+        app.dependency_overrides[get_db] = _override_get_db
+        app.dependency_overrides[get_redis] = _override_get_redis
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get("/api/v1/library/items/public")
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["title"] == "Alpha Skill"
+
+    async def test_503_on_redis_error(self, db_session: AsyncSession) -> None:
+        """Redis error on hgetall → HTTP 503 (not 500) for the detail endpoint."""
+
+        class BrokenRedis(FakeRedis):
+            async def hgetall(self, key: str) -> dict[str, str]:
+                raise ConnectionError("Redis unavailable")
+
+        async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+            yield db_session
+
+        async def _override_get_redis() -> AsyncGenerator[BrokenRedis, None]:
+            yield BrokenRedis()
+
+        app = create_app()
+        app.dependency_overrides[get_db] = _override_get_db
+        app.dependency_overrides[get_redis] = _override_get_redis
+        app.dependency_overrides[get_settings] = _github_settings_dep()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            token = await _get_token(ac)
+            response = await ac.get(
+                "/api/v1/library/items/skill-alpha",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert response.status_code == 503

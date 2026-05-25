@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout/Layout";
+import { ItemDetail } from "./components/LibraryItem/ItemDetail";
 import { ProtectedRoute } from "./components/ProtectedRoute/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
@@ -21,6 +22,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/library/:slug" element={<ItemDetail />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
 

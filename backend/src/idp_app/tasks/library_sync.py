@@ -110,6 +110,7 @@ async def _fetch_and_build_items(settings: Any) -> list[dict[str, Any]]:
                     "title": frontmatter.get("title", slug),
                     "description": description or frontmatter.get("description", ""),
                     "content_type": content_type,
+                    "content": content,
                     "tags": json.dumps(tags),
                     "is_public": "true" if frontmatter.get("is_public", False) else "false",
                     "target_ai": json.dumps(target_ai) if target_ai is not None else "",

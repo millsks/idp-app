@@ -77,6 +77,10 @@ services:
       GITHUB_CLIENT_SECRET:        ${GITHUB_CLIENT_SECRET:-}
       GITHUB_OAUTH_REDIRECT_URI:   ${GITHUB_OAUTH_REDIRECT_URI:-http://localhost:8000/api/v1/auth/github/callback}
       FRONTEND_URL:                ${FRONTEND_URL:-http://localhost:5173}
+      GITHUB_CONTENT_TOKEN:        ${GITHUB_CONTENT_TOKEN:-}
+      GITHUB_CONTENT_OWNER:        ${GITHUB_CONTENT_OWNER:-}
+      GITHUB_CONTENT_REPO:         ${GITHUB_CONTENT_REPO:-}
+      GITHUB_CONTENT_BRANCH:       ${GITHUB_CONTENT_BRANCH:-main}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -108,6 +112,10 @@ services:
       CELERY_BROKER_URL:     redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
+      GITHUB_CONTENT_TOKEN:  ${GITHUB_CONTENT_TOKEN:-}
+      GITHUB_CONTENT_OWNER:  ${GITHUB_CONTENT_OWNER:-}
+      GITHUB_CONTENT_REPO:   ${GITHUB_CONTENT_REPO:-}
+      GITHUB_CONTENT_BRANCH: ${GITHUB_CONTENT_BRANCH:-main}
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,6 +139,10 @@ services:
       CELERY_BROKER_URL:     redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       SECRET_KEY:            ${SECRET_KEY:-change-me-in-production}
+      GITHUB_CONTENT_TOKEN:  ${GITHUB_CONTENT_TOKEN:-}
+      GITHUB_CONTENT_OWNER:  ${GITHUB_CONTENT_OWNER:-}
+      GITHUB_CONTENT_REPO:   ${GITHUB_CONTENT_REPO:-}
+      GITHUB_CONTENT_BRANCH: ${GITHUB_CONTENT_BRANCH:-main}
     depends_on:
       postgres:
         condition: service_healthy

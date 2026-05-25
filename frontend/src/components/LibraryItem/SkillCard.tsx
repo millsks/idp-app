@@ -2,79 +2,87 @@
  * SkillCard — displays a single library item in the browse grid.
  *
  * Shows: title, description snippet (truncated to 3 lines), content_type badge,
- * tags chips, and target AI chip.
+ * tags chips, and target AI chip.  Clicking the card navigates to /library/:slug.
  */
-import { Box, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Box, Card, CardActionArea, CardContent, Chip, Stack, Typography } from "@mui/material";
 import type { LibraryItem } from "../../api/library";
 
 interface SkillCardProps {
   item: LibraryItem;
 }
 
-export function SkillCard({ item }: SkillCardProps) {
+export function SkillCard({ item }: Readonly<SkillCardProps>) {
+  const navigate = useNavigate();
   const contentTypeColor = item.content_type === "Skill" ? "primary" : "secondary";
 
+  const handleCardClick = () => {
+    void navigate(`/library/${item.slug}`);
+  };
+
   return (
-    <Card
-      variant="outlined"
-      sx={{ height: "100%", display: "flex", flexDirection: "column" }}
-      aria-label={item.title}
-    >
-      <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-        {/* Header row: title + content_type badge */}
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
-          <Typography
-            variant="h6"
-            component="h2"
-            sx={{ fontSize: "1rem", fontWeight: 600, lineHeight: 1.3 }}
-          >
-            {item.title}
-          </Typography>
-          <Chip
-            label={item.content_type}
-            color={contentTypeColor}
-            size="small"
-            sx={{ flexShrink: 0 }}
-            aria-label={`Content type: ${item.content_type}`}
-          />
-        </Stack>
-
-        {/* Description snippet */}
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            flexGrow: 1,
-          }}
-        >
-          {item.description || "No description available."}
-        </Typography>
-
-        {/* Target AI chip */}
-        {item.target_ai && (
-          <Box>
+    <Card variant="outlined" sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <CardActionArea
+        onClick={handleCardClick}
+        aria-label={`View details for ${item.title}`}
+        sx={{ flexGrow: 1, display: "flex", alignItems: "flex-start" }}
+      >
+        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* Header row: title + content_type badge */}
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+            <Typography
+              variant="h6"
+              component="h2"
+              sx={{ fontSize: "1rem", fontWeight: 600, lineHeight: 1.3 }}
+            >
+              {item.title}
+            </Typography>
             <Chip
-              label={item.target_ai}
-              variant="outlined"
+              label={item.content_type}
+              color={contentTypeColor}
               size="small"
-              aria-label={`Target AI: ${item.target_ai}`}
+              sx={{ flexShrink: 0 }}
+              aria-label={`Content type: ${item.content_type}`}
             />
-          </Box>
-        )}
-
-        {/* Tags */}
-        {item.tags.length > 0 && (
-          <Stack direction="row" flexWrap="wrap" gap={0.5} aria-label="Tags">
-            {item.tags.map((tag) => (
-              <Chip key={tag} label={tag} size="small" variant="outlined" color="default" />
-            ))}
           </Stack>
-        )}
-      </CardContent>
+
+          {/* Description snippet */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              flexGrow: 1,
+            }}
+          >
+            {item.description || "No description available."}
+          </Typography>
+
+          {/* Target AI chip */}
+          {item.target_ai && (
+            <Box>
+              <Chip
+                label={item.target_ai}
+                variant="outlined"
+                size="small"
+                aria-label={`Target AI: ${item.target_ai}`}
+              />
+            </Box>
+          )}
+
+          {/* Tags */}
+          {item.tags.length > 0 && (
+            <Stack direction="row" flexWrap="wrap" gap={0.5} aria-label="Tags">
+              {item.tags.map((tag) => (
+                <Chip key={tag} label={tag} size="small" variant="outlined" color="default" />
+              ))}
+            </Stack>
+          )}
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 }
