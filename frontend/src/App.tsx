@@ -17,10 +17,10 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/library" element={<LibraryPage />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/library" element={<LibraryPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
 

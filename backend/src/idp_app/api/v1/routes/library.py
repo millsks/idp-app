@@ -2,11 +2,12 @@
 
 import json
 import logging
+import math
 from datetime import datetime
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from idp_app.core.database import get_redis
 from idp_app.core.security import get_current_user
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _PUBLIC_INDEX_KEY = "library:items:public"
+_ALL_ITEMS_KEY = "library:items"
 _ITEM_KEY_PREFIX = "library:item:"
 
 
@@ -96,6 +98,100 @@ async def list_public_library_items(
         page=1,
         size=total,
         pages=1 if total > 0 else 0,
+    )
+
+
+@router.get(
+    "/items",
+    response_model=LibraryItemList,
+    status_code=status.HTTP_200_OK,
+    summary="List library items (authenticated)",
+)
+async def list_library_items(
+    current_user: Annotated[User, Depends(get_current_user)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],  # type: ignore[type-arg]
+    content_type: Annotated[
+        str | None, Query(alias="type", description="Filter by content_type (Skill or Prompt)")
+    ] = None,
+    tags: Annotated[list[str] | None, Query(description="Filter by tag(s) — AND logic")] = None,
+    target_ai: Annotated[str | None, Query(description="Filter by target AI assistant")] = None,
+    q: Annotated[str | None, Query(description="Full-text search across title, description, tags, content")] = None,
+    page: Annotated[int, Query(ge=1, description="Page number (1-based)")] = 1,
+    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 20,
+) -> LibraryItemList:
+    """Return paginated, filtered library items from the Redis cache.
+
+    Requires a valid JWT.  Filtering and search are performed in-memory after
+    fetching all items from Redis using a pipeline for efficiency.
+    Returns HTTP 503 when Redis is unavailable; empty list when the cache is
+    genuinely empty.
+    """
+    try:
+        slugs: set[str] = await redis.smembers(_ALL_ITEMS_KEY)
+    except Exception as exc:
+        logger.exception("Redis error reading %s", _ALL_ITEMS_KEY)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Library cache is temporarily unavailable.",
+        ) from exc
+
+    all_items: list[LibraryItem] = []
+    slug_to_content: dict[str, str] = {}  # kept for full-text search (AC 4)
+
+    if slugs:
+        slug_list = list(slugs)
+        try:
+            pipe = redis.pipeline()
+            for slug in slug_list:
+                pipe.hgetall(f"{_ITEM_KEY_PREFIX}{slug}")
+            raw_results: list[dict[str, str]] = await pipe.execute()
+        except Exception as exc:
+            logger.exception("Redis pipeline error fetching library items")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Library cache is temporarily unavailable.",
+            ) from exc
+
+        for slug, raw in zip(slug_list, raw_results, strict=False):
+            if not raw:
+                logger.warning("Orphaned slug in %s: %s — hash missing, skipping", _ALL_ITEMS_KEY, slug)
+                continue
+            item = _decode_item(slug, raw)
+            if item is None:
+                continue
+            slug_to_content[slug] = raw.get("content", "")
+            all_items.append(item)
+
+    # In-memory filtering (AC: 6-9, 12)
+    filtered: list[LibraryItem] = []
+    for item in all_items:
+        if content_type is not None and item.content_type != content_type:
+            continue
+        if target_ai is not None and item.target_ai != target_ai:
+            continue
+        if tags:
+            item_tags_lower = {t.lower() for t in (item.tags or [])}
+            if not all(t.lower() in item_tags_lower for t in tags):
+                continue
+        if q:
+            q_lower = q.lower()
+            content_text = slug_to_content.get(item.slug, "")
+            searchable = " ".join(filter(None, [item.title, item.description, " ".join(item.tags or []), content_text]))
+            if q_lower not in searchable.lower():
+                continue
+        filtered.append(item)
+
+    total = len(filtered)
+    pages = math.ceil(total / size) if total > 0 else 0
+    start = (page - 1) * size
+    paginated = filtered[start : start + size]
+
+    return LibraryItemList(
+        items=paginated,
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
 
