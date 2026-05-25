@@ -3,10 +3,11 @@
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,17 +17,17 @@ from idp_app.models.user import User
 
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_password_hash = PasswordHash((BcryptHasher(),))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Return True if *plain_password* matches *hashed_password*."""
-    return bool(pwd_context.verify(plain_password, hashed_password))
+    return bool(_password_hash.verify(plain_password, hashed_password))
 
 
 def hash_password(password: str) -> str:
     """Return a bcrypt hash of *password*."""
-    return str(pwd_context.hash(password))
+    return str(_password_hash.hash(password))
 
 
 def create_access_token(data: dict[str, str], expires_delta: timedelta | None = None) -> str:
@@ -44,7 +45,7 @@ def create_access_token(data: dict[str, str], expires_delta: timedelta | None = 
 def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and verify a JWT access token.
 
-    Raises :exc:`jose.JWTError` if the token is invalid or expired.
+    Raises :exc:`jwt.PyJWTError` if the token is invalid or expired.
     """
     payload: dict[str, Any] = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     return payload
@@ -77,7 +78,7 @@ async def get_current_user(
         username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except JWTError as exc:
+    except jwt.PyJWTError as exc:
         raise credentials_exception from exc
 
     result = await db.execute(select(User).where(User.username == username))

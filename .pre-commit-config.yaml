@@ -85,14 +85,12 @@ repos:
           - sqlalchemy[mypy]
           - pydantic
           - pydantic-settings
-          - python-jose
-          - passlib
+          - PyJWT
+          - pwdlib[bcrypt]
           - httpx
           - pytest
           - pytest-asyncio
-          - types-passlib
           - types-redis
-          - types-python-jose
 
   # Bandit: security scanning
   - repo: https://github.com/PyCQA/bandit

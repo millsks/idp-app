@@ -1,0 +1,210 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+  ],
+  timezone: 'UTC',
+  schedule: [
+    'before 4am on sunday',
+  ],
+  prConcurrentLimit: 10,
+  prHourlyLimit: 4,
+  labels: [
+    'dependencies',
+    'automated',
+  ],
+  commitMessagePrefix: 'chore(deps):',
+  branchPrefix: 'renovate/',
+  rebaseWhen: 'conflicted',
+  minimumReleaseAge: '5 days',
+  osvVulnerabilityAlerts: true,
+  vulnerabilityAlerts: {
+    labels: [
+      'security',
+      'dependencies',
+      'automated',
+    ],
+    schedule: [
+      'at any time',
+    ],
+    minimumReleaseAge: '0 days',
+    automerge: false,
+    prPriority: 10,
+  },
+  enabledManagers: [
+    'pixi',
+    'npm',
+    'github-actions',
+    'dockerfile',
+    'docker-compose',
+    'custom.regex',
+  ],
+  customManagers: [
+    {
+      customType: 'regex',
+      description: 'Track the pixi CLI version pinned in workflow with: blocks',
+      managerFilePatterns: [
+        '/^\\.github/workflows/[^/]+\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'pixi-version:\\s*v?(?<currentValue>[\\d.]+)',
+      ],
+      datasourceTemplate: 'github-releases',
+      depNameTemplate: 'prefix-dev/pixi',
+      extractVersionTemplate: '^v(?<version>.+)$',
+      versioningTemplate: 'semver',
+    },
+  ],
+  packageRules: [
+    {
+      description: 'Automerge patch-only updates across all managers',
+      matchUpdateTypes: [
+        'patch',
+      ],
+      automerge: true,
+      automergeType: 'pr',
+    },
+    {
+      description: 'Manual review required for minor and major updates',
+      matchUpdateTypes: [
+        'minor',
+        'major',
+      ],
+      automerge: false,
+    },
+    {
+      description: 'Group all GitHub Actions version updates',
+      matchManagers: [
+        'github-actions',
+      ],
+      groupName: 'GitHub Actions',
+      labels: [
+        'ci',
+        'dependencies',
+        'automated',
+      ],
+    },
+    {
+      description: 'pixi CLI version pinned in workflow with: blocks',
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchDepNames: [
+        'prefix-dev/pixi',
+      ],
+      groupName: 'pixi CLI version',
+      labels: [
+        'ci',
+        'dependencies',
+        'automated',
+      ],
+      automerge: false,
+    },
+    {
+      description: 'Group all pixi (conda + PyPI) dependency updates',
+      matchManagers: [
+        'pixi',
+      ],
+      groupName: 'Pixi dependencies',
+      labels: [
+        'backend',
+        'dependencies',
+        'automated',
+      ],
+    },
+    {
+      description: 'pep440 versioning + bump strategy for pixi PyPI deps',
+      matchManagers: [
+        'pixi',
+      ],
+      matchDatasources: [
+        'pypi',
+      ],
+      versioning: 'pep440',
+      rangeStrategy: 'bump',
+    },
+    {
+      description: 'npm frontend runtime dependencies',
+      matchManagers: [
+        'npm',
+      ],
+      matchDepTypes: [
+        'dependencies',
+      ],
+      groupName: 'npm frontend deps',
+      labels: [
+        'frontend',
+        'dependencies',
+        'automated',
+      ],
+    },
+    {
+      description: 'npm frontend dev/tooling dependencies',
+      matchManagers: [
+        'npm',
+      ],
+      matchDepTypes: [
+        'devDependencies',
+      ],
+      groupName: 'npm frontend dev deps',
+      labels: [
+        'frontend',
+        'dependencies',
+        'automated',
+      ],
+    },
+    {
+      description: 'Automerge Docker digest updates (SHA refresh of same tag)',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'digest',
+      ],
+      groupName: 'Docker digest updates',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
+      automerge: true,
+      automergeType: 'pr',
+    },
+    {
+      description: 'Docker minor and patch image tag updates',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ],
+      groupName: 'Docker image updates (minor/patch)',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
+    },
+    {
+      description: 'Docker major image tag updates — require manual review',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
+      groupName: 'Docker image major updates',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
+      automerge: false,
+      prPriority: 5,
+    },
+  ],
+}

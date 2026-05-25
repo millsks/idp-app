@@ -1,71 +1,22 @@
 name: Repository Maintenance
 
+# The `update-dependencies` job that previously ran `pixi update` and `npm update`
+# here has been removed. Renovate (configured in .github/renovate.json) now owns
+# all dependency updates and lock-file regeneration. Keeping both would cause
+# merge conflicts on pixi.lock and frontend/package-lock.json.
+#
+# Remaining jobs:
+#   cleanup-artifacts — deletes old workflow runs to keep the Actions tab clean.
+#   security-audit    — generates artifact reports (bandit JSON + npm audit JSON)
+#                       for offline review. Complementary to Renovate's OSV-based
+#                       vulnerability PRs; these produce the raw audit trail.
+
 on:
   schedule:
     - cron: "0 2 * * 0"  # Weekly on Sundays at 2 AM UTC
   workflow_dispatch:
 
 jobs:
-  update-dependencies:
-    name: Update Dependencies
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.9.5
-        with:
-          pixi-version: v0.69.0
-
-      - name: Update pixi lock file
-        run: pixi update
-
-      - name: Update frontend npm dependencies
-        run: |
-          cd frontend
-          npm update
-          npm audit fix --force || true
-
-      - name: Check for changes
-        id: changes
-        run: |
-          if git diff --quiet; then
-            echo "has-changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has-changes=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create Pull Request
-        if: steps.changes.outputs.has-changes == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.RELEASE_PAT }}
-          commit-message: "chore(deps): update dependencies"
-          title: "chore(deps): automated dependency updates"
-          body: |
-            ## Automated Dependency Updates
-
-            This PR contains automated updates to:
-            - 📦 Pixi lock file (`pixi.lock`)
-            - 📦 Frontend npm packages (`frontend/package-lock.json`)
-
-            ### Checklist
-            - [ ] Backend tests pass
-            - [ ] Frontend tests pass
-            - [ ] No breaking changes
-
-            *Automated by the Repository Maintenance workflow.*
-          branch: automated/dependency-updates
-          delete-branch: true
-          labels: |
-            dependencies
-            automated
-            maintenance
-
   cleanup-artifacts:
     name: Cleanup Old Workflow Runs
     runs-on: ubuntu-latest
