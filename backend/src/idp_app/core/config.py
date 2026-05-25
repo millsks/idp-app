@@ -100,6 +100,22 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
     CELERY_TASK_ALWAYS_EAGER: bool = False  # Set True in tests to run tasks synchronously
 
+    # ------------------------------------------------------------------
+    # GitHub Content Repository (library sync)
+    # Personal access token with `contents:read` scope on the content repo.
+    # ------------------------------------------------------------------
+    GITHUB_CONTENT_TOKEN: str = ""
+    GITHUB_CONTENT_OWNER: str = ""
+    GITHUB_CONTENT_REPO: str = ""
+    GITHUB_CONTENT_BRANCH: str = "main"
+
+    # ------------------------------------------------------------------
+    # Library Cache
+    # How often (in seconds) the library sync task runs and how long
+    # items are considered fresh.  Default: 900 s (15 minutes).
+    # ------------------------------------------------------------------
+    LIBRARY_CACHE_TTL: int = 900
+
 
 @lru_cache
 def get_settings() -> Settings:

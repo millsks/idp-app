@@ -12,6 +12,7 @@ class TestCeleryApp:
         task_names = list(celery_app.tasks.keys())
         assert any("send_welcome_email" in name for name in task_names)
         assert any("cleanup_expired_tokens" in name for name in task_names)
+        assert any("library.sync_content" in name for name in task_names)
 
 
 class TestSendWelcomeEmail:
