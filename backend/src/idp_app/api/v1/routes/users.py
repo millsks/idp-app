@@ -7,11 +7,32 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from idp_app.core.database import get_db
-from idp_app.core.security import hash_password
+from idp_app.core.security import get_current_user, hash_password
 from idp_app.models.user import User
-from idp_app.schemas.user import UserCreate, UserRead, UserUpdate
+from idp_app.schemas.user import UserCreate, UserMe, UserMeUpdate, UserRead, UserUpdate
 
 router = APIRouter()
+
+
+@router.get("/me", response_model=UserMe, summary="Get current user profile")
+async def get_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Return the authenticated user's own profile."""
+    return current_user
+
+
+@router.patch("/me", response_model=UserMe, summary="Update current user profile")
+async def patch_me(
+    user_in: UserMeUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    """Update the authenticated user's display name."""
+    current_user.full_name = user_in.full_name
+    await db.flush()
+    await db.refresh(current_user)
+    return current_user
 
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED, summary="Create user")

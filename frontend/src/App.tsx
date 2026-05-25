@@ -5,6 +5,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
           {/* Protected routes (placeholder pages until Stories 3.x & 4.x) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/library" element={<div>Library — coming in Story 4.x</div>} />
-            <Route path="/profile" element={<div>Profile — coming in Story 3.1</div>} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
 
           {/* Catch-all */}
