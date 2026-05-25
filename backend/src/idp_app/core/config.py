@@ -87,6 +87,13 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # ------------------------------------------------------------------
+    # OAuth2 — Google
+    # ------------------------------------------------------------------
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
+
+    # ------------------------------------------------------------------
     # Celery
     # ------------------------------------------------------------------
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
