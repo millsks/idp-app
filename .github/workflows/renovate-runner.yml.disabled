@@ -1,0 +1,72 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │  SELF-HOSTED RENOVATE RUNNER — CURRENTLY DISABLED                       │
+# │                                                                          │
+# │  This file is intentionally named .yml.disabled so GitHub Actions does  │
+# │  NOT pick it up. The repository currently uses the Mend Renovate GitHub  │
+# │  App (cloud-hosted, free for public repos), configured via               │
+# │  .github/renovate.json.                                                  │
+# │                                                                          │
+# │  To switch to self-hosted:                                               │
+# │   1. Uninstall the Mend Renovate GitHub App from the repository to       │
+# │      avoid duplicate runs and merge conflicts.                            │
+# │   2. Create a GitHub PAT (classic) with scopes:                          │
+# │        • repo  (read + write repository contents and pull requests)      │
+# │        • workflow  (required to update workflow files themselves)         │
+# │      Store it as repository secret: RENOVATE_TOKEN                       │
+# │   3. Rename this file to renovate-runner.yml                             │
+# │   4. Commit and push — Actions will immediately pick it up.              │
+# │                                                                          │
+# │  Note: The existing RELEASE_PAT secret MAY already have the required     │
+# │  scopes. Check before creating a new token.                              │
+# └──────────────────────────────────────────────────────────────────────────┘
+
+name: Renovate (Self-hosted Runner)
+
+on:
+  schedule:
+    # Weekly on Sundays at 4 AM UTC — mirrors the schedule in renovate.json.
+    # Offset by 2 hours from the maintenance.yml cron (2 AM) to avoid overlap.
+    - cron: "0 4 * * 0"
+  # Allow a manual trigger from the Actions tab for on-demand runs.
+  workflow_dispatch:
+
+# Ensure only one Renovate run executes at a time. Unlike cancel-in-progress,
+# we queue rather than cancel so no update scan is lost.
+concurrency:
+  group: renovate-self-hosted
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    # 60 minutes is generous; a cold first run on a repo with many deps can
+    # take 20–30 minutes. Subsequent runs are much faster (~5 min).
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # renovatebot/github-action runs the full Renovate CLI in a Docker
+      # container, reads .github/renovate.json, and opens PRs exactly as the
+      # cloud-hosted app would. The only difference is it uses your PAT instead
+      # of the app's OAuth token.
+      - name: Run Renovate
+        uses: renovatebot/github-action@v41
+        with:
+          configurationFile: .github/renovate.json
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          # Scope Renovate to this repository only. Without this, if the PAT
+          # has access to multiple repos, Renovate will attempt to scan all of
+          # them (autodiscover mode). Setting this makes behaviour explicit.
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          # Structured log output — easier to read in the Actions log viewer.
+          LOG_LEVEL: info
+          # Explicitly declare the platform (default is github, but being
+          # explicit avoids surprises if the action defaults ever change).
+          RENOVATE_PLATFORM: github
+          # Set the GitHub endpoint (required for GitHub Enterprise; harmless
+          # for github.com but good practice to leave documented).
+          RENOVATE_ENDPOINT: https://api.github.com/
