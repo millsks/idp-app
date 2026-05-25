@@ -22,12 +22,6 @@ exclude-newer = "5d"
 # The workspace-level exclude-newer above is enforced by the conda (rattler)
 # resolver.  PyPI packages are resolved by a separate uv process that needs
 # its own equivalent gate.  Setting the same "5d" value here ensures that
-# types-passlib, types-redis, types-python-jose, and conventional-pre-commit
-# (and any future PyPI additions) are subject to the same supply-chain
-# cool-down as the conda packages.
-[pypi-options]
-exclude-newer = "5d"
-
 # ---------------------------------------------------------------------------
 # Workspace-level dependencies (available in every environment)
 # ---------------------------------------------------------------------------
