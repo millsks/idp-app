@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -6,6 +6,14 @@ import { ThemeProvider } from "@mui/material";
 import { Layout } from "./Layout";
 import { theme } from "../../theme";
 import { AuthProvider } from "../../contexts/AuthContext";
+
+// Allow individual tests to override useAuth
+vi.mock("../../hooks/useAuth", async (importOriginal) => {
+  const actual = await (importOriginal as () => Promise<Record<string, unknown>>)();
+  return { ...actual };
+});
+
+import * as useAuthModule from "../../hooks/useAuth";
 
 function renderLayout() {
   return render(
@@ -38,5 +46,45 @@ describe("Layout", () => {
     await user.click(menuButton);
     // Drawer state toggled — just verify no crash occurs
     expect(menuButton).toBeInTheDocument();
+  });
+
+  it("shows 'Sign In' button when not authenticated", () => {
+    vi.spyOn(useAuthModule, "useAuth").mockReturnValue({
+      isAuthenticated: false,
+      isLoading: false,
+      user: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+    });
+    renderLayout();
+    expect(screen.getByLabelText(/sign in/i)).toBeInTheDocument();
+  });
+
+  it("shows 'Log Out' button and Profile nav item when authenticated", () => {
+    vi.spyOn(useAuthModule, "useAuth").mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+    });
+    renderLayout();
+    expect(screen.getByLabelText(/log out/i)).toBeInTheDocument();
+    expect(screen.getByText("Profile")).toBeInTheDocument();
+  });
+
+  it("calls logout when 'Log Out' is clicked", async () => {
+    const logoutFn = vi.fn();
+    vi.spyOn(useAuthModule, "useAuth").mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: null,
+      login: vi.fn(),
+      logout: logoutFn,
+    });
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByLabelText(/log out/i));
+    expect(logoutFn).toHaveBeenCalledOnce();
   });
 });

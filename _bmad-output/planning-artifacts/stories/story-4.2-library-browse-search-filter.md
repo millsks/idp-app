@@ -1,6 +1,6 @@
 # Story 4.2: Library Browse, Search & Filter
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -102,3 +102,14 @@ so that I can quickly find the content most relevant to my current task.
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+- [x] [Review][Decision] Pagination hardcoded to `page: 1` / `size: 50` — resolved: add pagination UI (MUI Pagination). Fixed: `size` reset to 20, `currentPage` state wired to filters and Pagination component.
+- [x] [Review][Patch] `type` parameter shadows Python built-in — renamed to `content_type` with `Query(alias="type")` to preserve API contract [backend/src/idp_app/api/v1/routes/library.py]
+- [x] [Review][Patch] Redis errors silently return HTTP 200 with empty list — both `smembers` and pipeline `execute` now raise HTTP 503 on exception [backend/src/idp_app/api/v1/routes/library.py]
+- [x] [Review][Patch] `q` search excludes `content` field — `slug_to_content` dict now carries raw content through the pipeline loop; searchable string includes content [backend/src/idp_app/api/v1/routes/library.py]
+- [x] [Review][Patch] Axios `tags` array serialization broken — added explicit `paramsSerializer` using URLSearchParams with `append` to produce repeated keys [frontend/src/api/library.ts]
+- [x] [Review][Patch] Tag / targetAi filter options derived from filtered+paginated result set — separate `CATALOGUE_FILTERS` stable query (`size: 100`) for option lists; `allTags` / `targetAiOptions` derived from `catalogueData` [frontend/src/pages/LibraryPage.tsx]
+- [x] [Review][Patch] Orphaned slug logging missing — added `logger.warning` for empty hash results and skips `_decode_item` call for empty `raw` [backend/src/idp_app/api/v1/routes/library.py]
+- [x] [Review][Defer] Full dataset loaded into memory before filtering — all items fetched then filtered in Python; acknowledged as acceptable in Dev Notes for MVP1 (≤1,000 items) [backend/src/idp_app/api/v1/routes/library.py] — deferred, pre-existing architectural decision
