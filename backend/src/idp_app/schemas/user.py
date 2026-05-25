@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -25,6 +25,36 @@ class UserUpdate(BaseModel):
 
     full_name: str | None = None
     is_active: bool | None = None
+
+
+class UserMe(BaseModel):
+    """Schema returned from GET /users/me — authenticated user's own profile."""
+
+    id: int
+    email: EmailStr
+    full_name: str | None
+    avatar_url: str | None
+    oauth_provider: str | None
+    is_active: bool
+    is_superuser: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserMeUpdate(BaseModel):
+    """Schema for PATCH /users/me — only display name is editable."""
+
+    full_name: str = Field(min_length=1)
+
+    @field_validator("full_name")
+    @classmethod
+    def strip_and_reject_whitespace(cls, v: str) -> str:
+        """Strip surrounding whitespace; reject blank/whitespace-only values."""
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("full_name must not be blank or whitespace only")
+        return stripped
 
 
 class UserRead(UserBase):

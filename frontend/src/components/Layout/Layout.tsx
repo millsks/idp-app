@@ -20,6 +20,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
 import LoginIcon from "@mui/icons-material/Login";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -33,6 +34,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [{ label: "Home", path: "/", icon: <HomeIcon /> }];
+
+const AUTHED_NAV_ITEMS: NavItem[] = [
+  { label: "Profile", path: "/profile", icon: <AccountCircleIcon /> },
+];
 
 /**
  * Root layout: top AppBar + collapsible side Drawer + main content area.
@@ -49,11 +54,13 @@ export function Layout() {
     setDrawerOpen((prev) => !prev);
   };
 
+  const visibleNavItems = [...NAV_ITEMS, ...(isAuthenticated ? AUTHED_NAV_ITEMS : [])];
+
   const drawerContent = (
     <Box>
       <Toolbar />
       <List>
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems.map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
               onClick={() => {
