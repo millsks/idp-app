@@ -15,3 +15,7 @@
 - **`FakeRedis` does not enforce TTL expiry** [`backend/tests/conftest.py:30`]: Expiry-based failure modes (OAuth state timeout after 300 s, exchange code timeout after 30 s) are untested. Upgrade to `fakeredis` PyPI package (supports TTL) or implement timer-based expiry in `FakeRedis`.
 - **Username-collision fallback branch untested** [`backend/src/idp_app/api/v1/routes/auth.py:202`]: No test creates a conflicting local username then triggers GitHub first-login. Add a test that pre-creates `User(username="octocat")` then runs the callback with `login="octocat"` and asserts `username == "github_<id>"`.
 - **`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` default to empty string** [`backend/src/idp_app/core/config.py:84`]: App starts and OAuth routes are reachable even without credentials configured; OAuth exchange silently fails at runtime. Consider adding a validator that warns (or raises if `ENVIRONMENT == "production"`) when these fields are empty.
+
+## Deferred from: story-2.2-google-oauth-backend manual verification (2026-05-24)
+
+- **Google Cloud project not yet available for OAuth verification** [`.env` / Google Cloud Console]: End-to-end Google login cannot be verified locally until a Google Cloud project is created and OAuth web credentials are provisioned (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) with redirect URI `http://localhost:8000/api/v1/auth/google/callback`. Once available, set `FRONTEND_URL` to the active dev port and re-run manual login validation.
