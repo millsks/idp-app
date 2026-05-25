@@ -1,222 +1,210 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
-  // ── Presets ────────────────────────────────────────────────────────────────
-  // config:recommended  → base config + group:recommended + merge-confidence
-  //                       badges + workarounds:all. Dependency Dashboard issue
-  //                       is included via config:base → :dependencyDashboard.
-  "extends": ["config:recommended"],
-
-  // ── Scheduling ─────────────────────────────────────────────────────────────
-  // Routine update PRs open once per week (Sunday before 4 AM UTC).
-  // Vulnerability-driven PRs bypass this schedule entirely (see below).
-  "timezone": "UTC",
-  "schedule": ["before 4am on sunday"],
-
-  // ── Throughput limits ──────────────────────────────────────────────────────
-  // Prevent PR floods on the first run or after a long gap.
-  "prConcurrentLimit": 10,
-  "prHourlyLimit": 4,
-
-  // ── PR / commit defaults ───────────────────────────────────────────────────
-  "labels": ["dependencies", "automated"],
-  // commitMessagePrefix owns the full prefix; commitMessageAction is the default
-  // ("update") and is omitted to avoid the config-migration deprecation warning.
-  "commitMessagePrefix": "chore(deps):",
-  "branchPrefix": "renovate/",
-  // Only rebase when there is an actual merge conflict; avoids hammering CI
-  // every time main gets a new commit while pixi.lock PRs are open.
-  "rebaseWhen": "conflicted",
-
-  // ── Supply-chain cool-down ─────────────────────────────────────────────────
-  // Do NOT open a PR for any package version that was published less than 5
-  // days ago. This provides a window for the community to surface supply-chain
-  // issues (typosquatting, malicious releases, accidental breakage) before we
-  // pull the package in. Applies to ALL managers (pixi/conda, npm, GHA, Docker).
-  //
-  // Security-alert PRs (osvVulnerabilityAlerts) override this to "0 days" so
-  // a CVE fix is never delayed by the cool-down period.
-  "minimumReleaseAge": "5 days",
-
-  // ── Vulnerability scanning (OSV database) ─────────────────────────────────
-  // Replaces Dependabot security alerts for the pixi ecosystem, and supplements
-  // them for npm / Docker. Renovate queries osv.dev for every package in the
-  // lockfile and opens immediate PRs when a known vulnerability is found.
-  "osvVulnerabilityAlerts": true,
-  "vulnerabilityAlerts": {
-    "labels": ["security", "dependencies", "automated"],
-    // Bypass the weekly schedule — security PRs open the moment a CVE is found.
-    "schedule": ["at any time"],
-    // Bypass the 5-day cool-down — a patched version should land immediately.
-    "minimumReleaseAge": "0 days",
-    // Never automerge security PRs; always require a human eyes-on review.
-    "automerge": false,
-    "prPriority": 10
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+  ],
+  timezone: 'UTC',
+  schedule: [
+    'before 4am on sunday',
+  ],
+  prConcurrentLimit: 10,
+  prHourlyLimit: 4,
+  labels: [
+    'dependencies',
+    'automated',
+  ],
+  commitMessagePrefix: 'chore(deps):',
+  branchPrefix: 'renovate/',
+  rebaseWhen: 'conflicted',
+  minimumReleaseAge: '5 days',
+  osvVulnerabilityAlerts: true,
+  vulnerabilityAlerts: {
+    labels: [
+      'security',
+      'dependencies',
+      'automated',
+    ],
+    schedule: [
+      'at any time',
+    ],
+    minimumReleaseAge: '0 days',
+    automerge: false,
+    prPriority: 10,
   },
-
-  // ── Enabled managers ───────────────────────────────────────────────────────
-  "enabledManagers": [
-    "pixi",           // pixi.toml  (conda-forge + PyPI deps)
-    "npm",            // frontend/package.json
-    "github-actions", // .github/workflows/*.yml  uses: lines
-    "dockerfile",     // docker/*/Dockerfile  FROM directives
-    "docker-compose", // docker-compose.yml   image: lines
-    "regex"           // custom patterns (pixi CLI version — see customManagers)
+  enabledManagers: [
+    'pixi',
+    'npm',
+    'github-actions',
+    'dockerfile',
+    'docker-compose',
+    'custom.regex',
   ],
-
-  // ── Custom regex manager — pixi CLI version in workflow `with:` blocks ─────
-  // The GitHub Actions manager tracks `uses: prefix-dev/setup-pixi@vX.Y.Z` but
-  // cannot see the `pixi-version: vX.Y.Z` inside the `with:` block — that is a
-  // plain string, not an action reference. This regex manager bridges the gap by
-  // treating it as a GitHub release dependency and opening PRs when a new pixi
-  // CLI version is published at github.com/prefix-dev/pixi.
-  "customManagers": [
+  customManagers: [
     {
-      "customType": "regex",
-      "description": "Track the pixi CLI version pinned in workflow with: blocks",
-      "fileMatch": ["^\\.github/workflows/[^/]+\\.ya?ml$"],
-      "matchStrings": ["pixi-version:\\s*v?(?<currentValue>[\\d.]+)"],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "prefix-dev/pixi",
-      "extractVersionTemplate": "^v(?<version>.+)$",
-      "versioningTemplate": "semver"
-    }
+      customType: 'regex',
+      description: 'Track the pixi CLI version pinned in workflow with: blocks',
+      managerFilePatterns: [
+        '/^\\.github/workflows/[^/]+\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'pixi-version:\\s*v?(?<currentValue>[\\d.]+)',
+      ],
+      datasourceTemplate: 'github-releases',
+      depNameTemplate: 'prefix-dev/pixi',
+      extractVersionTemplate: '^v(?<version>.+)$',
+      versioningTemplate: 'semver',
+    },
   ],
-
-  // ── Package rules ──────────────────────────────────────────────────────────
-  // Rules are evaluated in order; later rules override earlier ones for the
-  // same field. The global automerge rules come first so manager-specific
-  // rules can tighten (but not accidentally loosen) them.
-  "packageRules": [
-
-    // ── [1] Global: automerge patch updates only ───────────────────────────
-    // Patch bumps (x.y.Z) are low-risk by semver convention and safe to land
-    // without a manual review cycle, provided CI passes.
+  packageRules: [
     {
-      "description": "Automerge patch-only updates across all managers",
-      "matchUpdateTypes": ["patch"],
-      "automerge": true,
-      "automergeType": "pr"
+      description: 'Automerge patch-only updates across all managers',
+      matchUpdateTypes: [
+        'patch',
+      ],
+      automerge: true,
+      automergeType: 'pr',
     },
-
-    // ── [2] Global: block automerge for minor and major ────────────────────
-    // Minor bumps may introduce behavioural changes; major bumps almost always
-    // do. Both require a human review before merging.
     {
-      "description": "Manual review required for minor and major updates",
-      "matchUpdateTypes": ["minor", "major"],
-      "automerge": false
+      description: 'Manual review required for minor and major updates',
+      matchUpdateTypes: [
+        'minor',
+        'major',
+      ],
+      automerge: false,
     },
-
-    // ── [3] GitHub Actions ─────────────────────────────────────────────────
-    // Group every action version bump into a single weekly PR to reduce noise.
-    // Patch-level bumps will still be automerged (rule [1] applies last).
     {
-      "description": "Group all GitHub Actions version updates",
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions",
-      "labels": ["ci", "dependencies", "automated"]
+      description: 'Group all GitHub Actions version updates',
+      matchManagers: [
+        'github-actions',
+      ],
+      groupName: 'GitHub Actions',
+      labels: [
+        'ci',
+        'dependencies',
+        'automated',
+      ],
     },
-
-    // ── [4] pixi CLI version (regex manager) ──────────────────────────────
-    // Matches the `pixi-version:` key in workflow `with:` blocks.
-    // Intentionally NOT automerged even on patch — pixi is the environment
-    // foundation and warrants a quick sanity check before landing.
     {
-      "description": "pixi CLI version pinned in workflow with: blocks",
-      "matchManagers": ["regex"],
-      "matchDepNames": ["prefix-dev/pixi"],
-      "groupName": "pixi CLI version",
-      "labels": ["ci", "dependencies", "automated"],
-      "automerge": false
+      description: 'pixi CLI version pinned in workflow with: blocks',
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchDepNames: [
+        'prefix-dev/pixi',
+      ],
+      groupName: 'pixi CLI version',
+      labels: [
+        'ci',
+        'dependencies',
+        'automated',
+      ],
+      automerge: false,
     },
-
-    // ── [5] Pixi dependencies (all conda-forge + PyPI deps in pixi.toml) ──
-    // Grouped as one PR per week. The global patch-automerge rule [1] applies,
-    // so patch bumps will be automerged; minor/major will wait for review.
     {
-      "description": "Group all pixi (conda + PyPI) dependency updates",
-      "matchManagers": ["pixi"],
-      "groupName": "Pixi dependencies",
-      "labels": ["backend", "dependencies", "automated"]
+      description: 'Group all pixi (conda + PyPI) dependency updates',
+      matchManagers: [
+        'pixi',
+      ],
+      groupName: 'Pixi dependencies',
+      labels: [
+        'backend',
+        'dependencies',
+        'automated',
+      ],
     },
-
-    // ── [5a] PEP 440 range strategy for pixi PyPI packages ────────────────
-    // Packages sourced from PyPI inside pixi.toml (types-redis, conventional-
-    // pre-commit, etc.) use PEP 440 version specifiers (>=X.Y.Z,<N).  When a
-    // new major version crosses the upper bound, Renovate's pep440 module
-    // emits "failed to calculate newValue" and gives up.
-    // • versioning:pep440  — tells Renovate to use the PEP 440 scheme (not
-    //   conda versioning) for these deps.
-    // • rangeStrategy:bump — advance both the floor AND ceiling together
-    //   across a major boundary (e.g. >=4.6.0,<5 → >=5.0.0,<6) instead of
-    //   trying to widen or replace the range, which is what triggers the error.
     {
-      "description": "pep440 versioning + bump strategy for pixi PyPI deps",
-      "matchManagers": ["pixi"],
-      "matchDatasources": ["pypi"],
-      "versioning": "pep440",
-      "rangeStrategy": "bump"
+      description: 'pep440 versioning + bump strategy for pixi PyPI deps',
+      matchManagers: [
+        'pixi',
+      ],
+      matchDatasources: [
+        'pypi',
+      ],
+      versioning: 'pep440',
+      rangeStrategy: 'bump',
     },
-
-    // ── [6] npm frontend runtime deps ─────────────────────────────────────
-    // Production packages (react, @mui/*, axios, react-router-dom, etc.).
-    // Kept separate from dev deps so a failing prod-dep PR doesn't block
-    // an unrelated dev-tooling bump.
     {
-      "description": "npm frontend runtime dependencies",
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["dependencies"],
-      "groupName": "npm frontend deps",
-      "labels": ["frontend", "dependencies", "automated"]
+      description: 'npm frontend runtime dependencies',
+      matchManagers: [
+        'npm',
+      ],
+      matchDepTypes: [
+        'dependencies',
+      ],
+      groupName: 'npm frontend deps',
+      labels: [
+        'frontend',
+        'dependencies',
+        'automated',
+      ],
     },
-
-    // ── [7] npm frontend dev/tooling deps ────────────────────────────────
-    // Dev-only packages (vite, vitest, eslint, prettier, typescript, etc.).
     {
-      "description": "npm frontend dev/tooling dependencies",
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["devDependencies"],
-      "groupName": "npm frontend dev deps",
-      "labels": ["frontend", "dependencies", "automated"]
+      description: 'npm frontend dev/tooling dependencies',
+      matchManagers: [
+        'npm',
+      ],
+      matchDepTypes: [
+        'devDependencies',
+      ],
+      groupName: 'npm frontend dev deps',
+      labels: [
+        'frontend',
+        'dependencies',
+        'automated',
+      ],
     },
-
-    // ── [8] Docker digest updates ─────────────────────────────────────────
-    // A digest update refreshes the SHA pointer for an existing tag (e.g.
-    // postgres:17-alpine → postgres:17-alpine@sha256:…). It is not a version
-    // change and is safe to automerge unconditionally.
     {
-      "description": "Automerge Docker digest updates (SHA refresh of same tag)",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "matchUpdateTypes": ["digest"],
-      "groupName": "Docker digest updates",
-      "labels": ["docker", "dependencies", "automated"],
-      "automerge": true,
-      "automergeType": "pr"
+      description: 'Automerge Docker digest updates (SHA refresh of same tag)',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'digest',
+      ],
+      groupName: 'Docker digest updates',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
+      automerge: true,
+      automergeType: 'pr',
     },
-
-    // ── [9] Docker minor/patch tag bumps ─────────────────────────────────
-    // e.g. postgres:17.1-alpine → postgres:17.2-alpine. Patch-level bumps
-    // are caught by global rule [1] and automerged; minor bumps require review.
     {
-      "description": "Docker minor and patch image tag updates",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "Docker image updates (minor/patch)",
-      "labels": ["docker", "dependencies", "automated"]
+      description: 'Docker minor and patch image tag updates',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ],
+      groupName: 'Docker image updates (minor/patch)',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
     },
-
-    // ── [10] Docker major tag bumps ───────────────────────────────────────
-    // e.g. postgres:17-alpine → postgres:18-alpine. Always manual; elevated
-    // priority so they surface near the top of the Dependency Dashboard.
     {
-      "description": "Docker major image tag updates — require manual review",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "Docker image major updates",
-      "labels": ["docker", "dependencies", "automated"],
-      "automerge": false,
-      "prPriority": 5
-    }
-  ]
+      description: 'Docker major image tag updates — require manual review',
+      matchManagers: [
+        'dockerfile',
+        'docker-compose',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
+      groupName: 'Docker image major updates',
+      labels: [
+        'docker',
+        'dependencies',
+        'automated',
+      ],
+      automerge: false,
+      prPriority: 5,
+    },
+  ],
 }
