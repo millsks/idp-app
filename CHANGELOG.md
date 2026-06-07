@@ -5,10 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-05-31
+
+### Merge
+
+- Resolve conflicts with main
+
+### ⚙️ Miscellaneous Tasks
+
+- Update mypy version and configuration, enhance pre-commit hooks, and adjust backend type checking
+- Update ruff pre-commit hook version to v0.15.14 for improved linting and auto-fix capabilities
+- Update ruff configuration to recognize 'idp_app' as a first-party package and reorganize imports in test files
+- Mark story 1.2 as done
+- Update pixi.lock to reflect dependency changes
+
+### ⭐ Features
+
+- Enhance database configuration by separating credentials and adding URL assembly
+- Add MVP1 Product Requirements Document and Decision Log for idp-app
+- Add Architecture Decision Document for idp-app MVP1
+- Add epic breakdown document for idp-app MVP1, detailing functional and non-functional requirements
+- Implement Google OAuth2 backend login and frontend auth flow
+- Implement public preview strip and library API (story 1.2)
+- Complete redesign of the public landing page and add tests for HomePage component
+- **auth**: Implement GitHub OAuth login flow with state management and user upsert
+- **auth**: Implement GitHub OAuth login flow with token management and route protection
+- **tests**: Add unit tests for auth API wrapper and token store functionality
+- Implement Google OAuth support and update user email uniqueness constraint
+- Implement user profile page with /users/me endpoints and related functionality
+- Add LibraryPage and integrate with HomePage; update routing and tests
+- **library**: Implement create, edit, and delete functionality for skills and prompts
+- Implement authenticated library items listing with filtering and pagination
+- **tests**: Add unit tests for library and user API wrapper functions; update Layout tests for authentication states
+- Add ItemDetail component for displaying library item details
+- Add Renovate configuration and update workflows for dependency management
+- Update settings.json to add permissions for GitHub PR commands and JSON tool
+- Add supply-chain cool-down settings for package updates in pixi.toml
+- Add types-redis dependency for mypy support and adjust pypi-dependencies in pixi.toml
+- Update dependencies for JWT handling and password hashing; refactor security utilities
+
+### 🐛 Bug Fixes
+
+- Ensure consistent formatting and cleanup in various CSV and markdown files
+- **tests**: Add QueryClientProvider to HomePage test wrapper
+- Resolve mypy errors in library_sync and test_library_sync
+- **ci**: Update labeler glob to match renovate.json5 extension
+- **deps**: Resolve Renovate config-migration and pep440 warnings
+
+### 📚 Documentation
+
+- Update deferred work notes for Google OAuth verification requirements
+
+### 🚜 Refactor
+
+- Remove artifact upload steps from backend and frontend build jobs
+- Remove redundant pypi-options for supply-chain cool-down in pixi.toml
+- **merge**: Replace python-jose and passlib with PyJWT and pwdlib for JWT and password hashing
+
 ## [0.1.0] - 2026-05-24
 
 ### ⚙️ Miscellaneous Tasks
 
+- **release**: Update CHANGELOG.md for v0.1.0
 - **release**: Update CHANGELOG.md for v0.1.0
 
 ### ⭐ Features
@@ -18,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add initial configuration and module help files for BMad
 - Add SonarCloud configuration for project analysis
 - Add SonarCloud analysis job to CI workflow
+- Add backend and frontend build jobs to CI workflow
 
 ### 🐛 Bug Fixes
 
