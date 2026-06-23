@@ -16,7 +16,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Auto-label based on content
         uses: github/issue-labeler@v3.4
@@ -27,7 +27,7 @@ jobs:
 
       - name: Label PRs by file changes
         if: github.event_name == 'pull_request'
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
