@@ -27,7 +27,7 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Lint with ruff
@@ -69,7 +69,7 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Run backend tests
@@ -98,7 +98,7 @@ jobs:
       - name: Set up pixi (for Node.js)
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Install frontend dependencies
@@ -128,7 +128,7 @@ jobs:
       - name: Set up pixi (for Node.js)
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Install frontend dependencies
@@ -159,7 +159,7 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Build backend wheel
@@ -182,7 +182,7 @@ jobs:
       - name: Set up pixi (for Node.js)
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Install frontend dependencies
@@ -208,7 +208,7 @@ jobs:
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.71.0
           cache: true
 
       - name: Install frontend dependencies
