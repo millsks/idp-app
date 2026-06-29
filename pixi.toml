@@ -27,7 +27,7 @@ exclude-newer = "5d"
 # ---------------------------------------------------------------------------
 [dependencies]
 python     = ">=3.12,<3.14"
-nodejs     = ">=24,<25"
+nodejs     = ">=26,<27"
 git-cliff  = ">=2.8.0,<3"
 pre-commit = ">=4.0.0,<5"
 pre-commit-hooks = ">=5.0.0,<6"
@@ -45,7 +45,7 @@ websockets        = ">=13.0"         # WebSocket support for uvicorn
 sqlalchemy        = ">=2.0.0,<3"
 alembic           = ">=1.14.0,<2"
 celery            = ">=5.4.0,<6"    # celery[redis] extras via redis-py
-redis-py          = ">=5.2.0,<6"    # Celery broker & result backend
+redis-py          = ">=8.0.1,<9"    # Celery broker & result backend
 psycopg2          = ">=2.9.0,<3"
 asyncpg           = ">=0.30.0,<1"    # async PostgreSQL driver for SQLAlchemy
 pydantic          = ">=2.10.0,<3"
@@ -53,7 +53,7 @@ pydantic-settings = ">=2.6.0,<3"
 python-multipart  = ">=0.0.12"
 pyjwt             = ">=2.9.0,<3"    # JWT encode/decode (inline types — no stubs needed)
 pwdlib            = ">=0.3.0,<1"    # password hashing (inline types — no stubs needed)
-bcrypt            = ">=4.2.0,<5"     # bcrypt hasher backend for pwdlib
+bcrypt            = ">=5,<6"     # bcrypt hasher backend for pwdlib
 httpx             = ">=0.27.0,<1"
 
 [feature.backend.pypi-dependencies]
@@ -67,10 +67,10 @@ idp-app = { path = "backend", editable = true }
 # Backend development / tooling dependencies
 # ---------------------------------------------------------------------------
 [feature.backend-dev.dependencies]
-pytest         = ">=8.3.0,<9"
-pytest-cov     = ">=6.0.0,<7"
-pytest-asyncio = ">=0.24.0,<1"
-mypy           = ">=1.11.0,<2"
+pytest         = ">=9.1.1,<10"
+pytest-cov     = ">=7.1,<8"
+pytest-asyncio = ">=1.4,<2"
+mypy           = ">=2.1,<3"
 ruff           = ">=0.9.0,<1"
 bandit         = ">=1.8.0,<2"
 python-build   = ">=1.2.0,<2"    # provides `python -m build` for wheel/sdist packaging
