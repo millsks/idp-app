@@ -23,7 +23,7 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 # Stage 2: runtime — serve the built assets via Nginx
 # ---------------------------------------------------------------------------
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # Remove the default Nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
