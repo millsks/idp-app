@@ -17,7 +17,7 @@ services:
   # PostgreSQL — persistent relational data store
   # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: idp-postgres
     restart: unless-stopped
     environment:
@@ -39,7 +39,7 @@ services:
   # Redis — Celery broker + result backend
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: idp-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru

@@ -35,7 +35,7 @@ RUN pixi install --frozen --no-progress -e default
 # ---------------------------------------------------------------------------
 # Stage 2: runtime — lean production image
 # ---------------------------------------------------------------------------
-FROM debian:12-slim AS runtime
+FROM debian:13-slim AS runtime
 
 WORKDIR /app
 
